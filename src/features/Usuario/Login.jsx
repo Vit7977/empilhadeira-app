@@ -10,8 +10,20 @@ import {
 
 export default function Login() {
   const theme = useTheme();
-  const [email, setEmail] = useState(localStorage.getItem("usuarioLogado") ? JSON.parse(localStorage.getItem("usuarioLogado")).email : "");
-  const [senha, setSenha] = useState(localStorage.getItem("usuarioLogado") ? JSON.parse(localStorage.getItem("usuarioLogado")).senha : "");
+  const [email, setEmail] = useState(
+    localStorage.getItem("usuarioLogado")
+      ? JSON.parse(localStorage.getItem("usuarioLogado")).email
+      : "",
+  );
+  const [senha, setSenha] = useState(
+    localStorage.getItem("usuarioLogado")
+      ? JSON.parse(localStorage.getItem("usuarioLogado")).senha
+      : "",
+  );
+  const [inputFocus, setInputFocus] = useState({
+    input: "",
+    focus: false,
+  });
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -61,8 +73,29 @@ export default function Login() {
           autoCapitalize="none"
           autoComplete="email"
           outlineColor="gray"
-          activeOutlineColor="#ffd900ff"
-          left={<TextInput.Icon icon="email-outline" />}
+          activeOutlineColor={theme.colors.primary}
+          onFocus={() =>
+            setInputFocus({
+              input: "E-mail",
+              focus: true,
+            })
+          }
+          onBlur={() =>
+            setInputFocus({
+              input: "E-mail",
+              focus: false,
+            })
+          }
+          left={
+            <TextInput.Icon
+              icon="email-outline"
+              color={
+                inputFocus.focus && inputFocus.input === "E-mail"
+                  ? theme.colors.primary
+                  : "gray"
+              }
+            />
+          }
         />
 
         <HelperText type="error" visible={emailInvalido}>
@@ -77,12 +110,34 @@ export default function Login() {
           secureTextEntry={!mostrarSenha}
           autoCapitalize="none"
           outlineColor="gray"
-          activeOutlineColor="#ffd900ff"
-          left={<TextInput.Icon icon="lock-outline" />}
+          activeOutlineColor={theme.colors.primary}
+          onFocus={() =>
+            setInputFocus({
+              input: "Senha",
+              focus: true,
+            })
+          }
+          onBlur={() =>
+            setInputFocus({
+              input: "Senha",
+              focus: false,
+            })
+          }
+          left={
+            <TextInput.Icon
+              icon="lock-outline"
+              color={
+                inputFocus.focus && inputFocus.input === "Senha"
+                  ? theme.colors.primary
+                  : "gray"
+              }
+            />
+          }
           right={
             <TextInput.Icon
               icon={mostrarSenha ? "eye-off" : "eye"}
-              onPress={() => setMostrarSenha(!mostrarSenha)}
+              onPress={() => setMostrarSenha((prev) => !prev)}
+              forceTextInputFocus={false}
             />
           }
         />

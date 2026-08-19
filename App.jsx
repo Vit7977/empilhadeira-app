@@ -1,12 +1,9 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "react-native";
-import {
-  MD3LightTheme,
-  MD3DarkTheme,
-  PaperProvider,
-} from "react-native-paper";
+import { useColorScheme, View, Image, Text } from "react-native";
+import { MD3LightTheme, MD3DarkTheme, PaperProvider, IconButton } from "react-native-paper";
+import Icon from "./src/assets/icon.png"
 
 import Login from "./src/features/Usuario/Login";
 import Dashboard from "./src/features/Dashboard";
@@ -44,22 +41,12 @@ export default function App() {
               let iconName = "home-outline";
 
               if (route.name === "Dashboard") {
-                iconName = focused
-                  ? "grid"
-                  : "grid-outline";
+                iconName = focused ? "grid" : "grid-outline";
               } else if (route.name === "Login") {
-                iconName = focused
-                  ? "person"
-                  : "person-outline";
+                iconName = focused ? "person" : "person-outline";
               }
 
-              return (
-                <Ionicons
-                  name={iconName}
-                  size={size}
-                  color={color}
-                />
-              );
+              return <Ionicons name={iconName} size={size} color={color} />;
             },
 
             headerShown: true,
@@ -76,6 +63,18 @@ export default function App() {
               color: theme.colors.onSurface,
             },
 
+            headerRight: () => (
+              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "blue" }}>
+              <Text style={{ color: theme.colors.onSurface, fontSize: 16, marginRight: 10 }}>
+                My App
+              </Text>
+              <Image
+                source={Icon}
+                style={{ width: 30, height: 30, marginRight: 10 }}
+              />
+              </View>
+            ),
+
             tabBarStyle: {
               backgroundColor: theme.colors.surface,
               height: 70,
@@ -87,9 +86,7 @@ export default function App() {
 
             tabBarActiveTintColor: theme.colors.primary,
 
-            tabBarInactiveTintColor: isDark
-              ? "#777"
-              : "#777",
+            tabBarInactiveTintColor: isDark ? "#777" : "#777",
 
             tabBarLabelStyle: {
               fontSize: 12,
@@ -97,15 +94,9 @@ export default function App() {
             },
           })}
         >
-          <Tab.Screen
-            name="Dashboard"
-            component={Dashboard}
-          />
+          <Tab.Screen name="Dashboard" component={Dashboard} />
 
-          <Tab.Screen
-            name="Login"
-            component={Login}
-          />
+          <Tab.Screen name="Login" component={Login} />
         </Tab.Navigator>
       </NavigationContainer>
     </PaperProvider>
