@@ -6,6 +6,7 @@ import { MD3LightTheme, MD3DarkTheme, PaperProvider, IconButton } from "react-na
 import Icon from "./src/assets/icon.png"
 
 import Login from "./src/features/Usuario/Login";
+import Cadastro from "./src/features/Usuario/Cadastro";
 import Dashboard from "./src/features/Dashboard";
 
 const Tab = createBottomTabNavigator();
@@ -19,7 +20,8 @@ export default function App() {
           ...MD3DarkTheme,
           colors: {
             ...MD3DarkTheme.colors,
-            primary: "#ffd900",
+            primary: "#ffd900", 
+            neutral: "#ffffff",
           },
         }
       : {
@@ -27,6 +29,7 @@ export default function App() {
           colors: {
             ...MD3LightTheme.colors,
             primary: "#ff0000",
+            neutral: "#000000",
           },
         };
 
@@ -39,11 +42,19 @@ export default function App() {
           screenOptions={({ route }) => ({
             tabBarIcon: ({ focused, color, size }) => {
               let iconName = "home-outline";
-
-              if (route.name === "Dashboard") {
-                iconName = focused ? "grid" : "grid-outline";
-              } else if (route.name === "Login") {
-                iconName = focused ? "person" : "person-outline";
+              
+              switch (route.name) {
+                case "Dashboard":
+                  iconName = focused ? "grid" : "grid-outline";
+                  break;
+                case "Login":
+                  iconName = focused ? "person" : "person-outline";
+                  break;
+                case "Cadastro":
+                  iconName = focused ? "person-add" : "person-add-outline";
+                  break;
+                default:
+                  iconName = "home-outline";
               }
 
               return <Ionicons name={iconName} size={size} color={color} />;
@@ -64,9 +75,9 @@ export default function App() {
             },
 
             headerRight: () => (
-              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "blue" }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Text style={{ color: theme.colors.onSurface, fontSize: 16, marginRight: 10 }}>
-                My App
+                Caterpillar
               </Text>
               <Image
                 source={Icon}
@@ -97,6 +108,8 @@ export default function App() {
           <Tab.Screen name="Dashboard" component={Dashboard} />
 
           <Tab.Screen name="Login" component={Login} />
+
+          <Tab.Screen name="Cadastro" component={Cadastro} />
         </Tab.Navigator>
       </NavigationContainer>
     </PaperProvider>
