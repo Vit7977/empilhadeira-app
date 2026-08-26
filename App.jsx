@@ -2,8 +2,10 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme, View, Image, Text } from "react-native";
-import { MD3LightTheme, MD3DarkTheme, PaperProvider, IconButton } from "react-native-paper";
-import Icon from "./src/assets/icon.png"
+import { MD3LightTheme, MD3DarkTheme, PaperProvider, IconButton, Icon } from "react-native-paper";
+import { useState, useEffect } from "react";
+import { getStoredUser } from "./src/features/Usuario/Login";
+// import Icon from "./src/assets/icon.png"
 
 import Login from "./src/features/Usuario/Login";
 import Cadastro from "./src/features/Usuario/Cadastro";
@@ -13,6 +15,16 @@ const Tab = createBottomTabNavigator();
 
 export default function App() {
   const colorScheme = useColorScheme();
+  
+  const [email, setEmail] = useState("");
+  const [isLogged, setIsLogged] = useState(false);
+
+useEffect(() => {
+  const usuario = getStoredUser();
+  if (usuario) {
+    setEmail(usuario.email);
+  }
+}, []);
 
   const theme =
     colorScheme === "dark"
@@ -42,7 +54,7 @@ export default function App() {
           screenOptions={({ route }) => ({
             tabBarIcon: ({ focused, color, size }) => {
               let iconName = "home-outline";
-              
+
               switch (route.name) {
                 case "Dashboard":
                   iconName = focused ? "grid" : "grid-outline";
@@ -75,14 +87,11 @@ export default function App() {
             },
 
             headerRight: () => (
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "end", marginRight: 10, backgroundColor: 'blue', width: '100%' }}>
               <Text style={{ color: theme.colors.onSurface, fontSize: 16, marginRight: 10 }}>
-                Caterpillar
+                {email}
               </Text>
-              <Image
-                source={Icon}
-                style={{ width: 30, height: 30, marginRight: 10 }}
-              />
+              <Icon source="account" size={30} />
               </View>
             ),
 
@@ -105,11 +114,25 @@ export default function App() {
             },
           })}
         >
-          <Tab.Screen name="Dashboard" component={Dashboard} />
 
-          <Tab.Screen name="Login" component={Login} />
+          {isLogged ? (
+            <Tab.Screen name="Dashboard" component={Dashboard} />
+          ) : (
+            <>
+              <Tab.Screen name="Login">
+                {(props) => <Login
+                          {...props}
+                          onLoginSuccess={(usuario) => {
+                            setEmail(usuario.email);
+                            setIsLogged(true);
+                          }}
+                        />}
+              </Tab.Screen>
 
-          <Tab.Screen name="Cadastro" component={Cadastro} />
+              <Tab.Screen name="Cadastro" component={Cadastro} />
+            </>
+          )}
+          
         </Tab.Navigator>
       </NavigationContainer>
     </PaperProvider>

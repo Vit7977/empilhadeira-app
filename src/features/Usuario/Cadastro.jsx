@@ -26,7 +26,8 @@ export default function Cadastro() {
 
   const nomeInvalido = !!nome && nome.trim().length < 2;
   const emailInvalido = !!email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const senhaInvalida = !!senha && senha.length < 6;
+  const senhaInvalida =
+  !!senha && (senha.length <= 8 || senha.length >= 255);
 
   async function handleCadastro() {
     if (!nome || !email || !senha || nomeInvalido || emailInvalido || senhaInvalida) {
@@ -151,6 +152,7 @@ export default function Cadastro() {
           onChangeText={setSenha}
           mode="outlined"
           secureTextEntry={!mostrarSenha}
+          maxLength={254}
           autoCapitalize="none"
           outlineColor="gray"
           activeOutlineColor={theme.colors.primary}
@@ -186,8 +188,9 @@ export default function Cadastro() {
         />
 
         <HelperText type="error" visible={senhaInvalida}>
-          A senha deve ter pelo menos 6 caracteres.
+          A senha deve ter entre 9 e 254 caracteres.
         </HelperText>
+
 
         <Button
           mode="contained"

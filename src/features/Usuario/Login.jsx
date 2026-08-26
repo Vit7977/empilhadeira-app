@@ -8,7 +8,7 @@ import {
   useTheme,
 } from "react-native-paper";
 
-const getStoredUser = () => {
+export const getStoredUser = () => {
   if (typeof globalThis === "undefined" || !("localStorage" in globalThis)) {
     return null;
   }
@@ -21,7 +21,7 @@ const getStoredUser = () => {
   }
 };
 
-export default function Login() {
+export default function Login({onLoginSuccess}) {
   const theme = useTheme();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -56,7 +56,7 @@ export default function Login() {
 
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    console.log("Login:", { email, senha });
+    const usuario = { email, senha };
 
     if (typeof globalThis !== "undefined" && "localStorage" in globalThis) {
       globalThis.localStorage.setItem(
@@ -66,9 +66,14 @@ export default function Login() {
     }
 
     setLoading(false);
+    onLoginSuccess?.(usuario);
   }
 
-  const formularioInvalido = !email || !senha || emailInvalido;
+  const senhaInvalida =
+  !!senha && (senha.length <= 8 || senha.length >= 255);
+
+  const formularioInvalido =
+  !email || !senha || emailInvalido || senhaInvalida;
 
   return (
     <View
@@ -127,6 +132,7 @@ export default function Login() {
           onChangeText={setSenha}
           mode="outlined"
           secureTextEntry={!mostrarSenha}
+          maxLength={254}
           autoCapitalize="none"
           outlineColor="gray"
           activeOutlineColor={theme.colors.primary}
@@ -160,6 +166,10 @@ export default function Login() {
             />
           }
         />
+
+        <HelperText type="error" visible={senhaInvalida}>
+          A senha deve ter entre 9 e 254 caracteres.
+        </HelperText>
 
         <Button
           mode="contained"
