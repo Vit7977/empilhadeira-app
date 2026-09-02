@@ -1,7 +1,7 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme, View, Image, Text } from "react-native";
+import { useColorScheme, View, Text, TouchableOpacity } from "react-native";
 import { MD3LightTheme, MD3DarkTheme, PaperProvider, IconButton, Icon } from "react-native-paper";
 import { useState, useEffect } from "react";
 import { getStoredUser } from "./src/features/Usuario/Login";
@@ -15,16 +15,26 @@ const Tab = createBottomTabNavigator();
 
 export default function App() {
   const colorScheme = useColorScheme();
-  
-  const [email, setEmail] = useState("");
+
+  const [nome, setNome] = useState("");
   const [isLogged, setIsLogged] = useState(false);
 
-useEffect(() => {
-  const usuario = getStoredUser();
-  if (usuario) {
-    setEmail(usuario.email);
-  }
-}, []);
+  const handleLogout = () => {
+    if (typeof globalThis !== "undefined" && "localStorage" in globalThis) {
+      globalThis.localStorage.removeItem("usuarioLogado");
+    }
+
+    setNome("");
+    setIsLogged(false);
+  };
+
+  useEffect(() => {
+    const usuario = getStoredUser();
+    if (usuario) {
+      setNome(usuario.nome);
+      setIsLogged(true);
+    }
+  }, []);
 
   const theme =
     colorScheme === "dark"
@@ -86,14 +96,46 @@ useEffect(() => {
               color: theme.colors.onSurface,
             },
 
-            headerRight: () => (
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "end", marginRight: 10, backgroundColor: 'blue', width: '100%' }}>
-              <Text style={{ color: theme.colors.onSurface, fontSize: 16, marginRight: 10 }}>
-                {email}
-              </Text>
-              <Icon source="account" size={30} />
-              </View>
-            ),
+            headerRight: () =>
+              isLogged ? (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginRight: 10,
+                    maxWidth: "95%",
+                    overflow: "hidden",
+                    paddingHorizontal: 6
+                  }}
+                >
+                  <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={{
+                      color: theme.colors.onSurface,
+                      fontSize: 16,
+                      marginRight: 8,
+                      flexShrink: 1,
+                      maxWidth: "100%",
+                    }}
+                  >
+                    {nome}
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={handleLogout}
+                    activeOpacity={0.7}
+                    style={{
+                      justifyContent: "center",
+                      alignItems: "center",
+                      padding: 4,
+                    }}
+                  >
+                    <Icon source="logout" size={24} />
+                  </TouchableOpacity>
+                </View>
+              ) : null,
 
             tabBarStyle: {
               backgroundColor: theme.colors.surface,

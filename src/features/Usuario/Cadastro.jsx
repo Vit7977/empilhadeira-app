@@ -7,8 +7,9 @@ import {
   HelperText,
   useTheme,
 } from "react-native-paper";
+import { saveStoredUser } from "./Login";
 
-export default function Cadastro() {
+export default function Cadastro({ navigation }) {
   const theme = useTheme();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -38,20 +39,16 @@ export default function Cadastro() {
 
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    console.log("Cadastro:", {
-      nome,
-      email,
+    const usuario = {
+      nome: nome.trim(),
+      email: email.trim().toLowerCase(),
       senha,
-    });
+    };
 
-    if (typeof globalThis !== "undefined" && "localStorage" in globalThis) {
-      globalThis.localStorage.setItem(
-        "usuarioLogado",
-        JSON.stringify({ nome, email, senha }),
-      );
-    }
+    saveStoredUser(usuario);
 
     setLoading(false);
+    navigation?.navigate?.("Login");
   }
 
   const formularioInvalido =
@@ -211,7 +208,7 @@ export default function Cadastro() {
               ? theme.colors.primary
               : theme.colors.onSurfaceVariant ?? theme.colors.onSurface
           }
-          onPress={() => console.log("Já tem conta")}
+          onPress={() => navigation?.navigate?.("Login")}
           onMouseEnter={() => setTextHover({ text: "Já tem conta", hover: true })}
           onMouseLeave={() => setTextHover({ text: "", hover: false })}
         >

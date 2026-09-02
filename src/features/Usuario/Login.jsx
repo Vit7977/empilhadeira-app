@@ -21,7 +21,13 @@ export const getStoredUser = () => {
   }
 };
 
-export default function Login({onLoginSuccess}) {
+export const saveStoredUser = (usuario) => {
+  if (typeof globalThis !== "undefined" && "localStorage" in globalThis) {
+    globalThis.localStorage.setItem("usuarioLogado", JSON.stringify(usuario));
+  }
+};
+
+export default function Login({ onLoginSuccess, navigation }) {
   const theme = useTheme();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -35,6 +41,7 @@ export default function Login({onLoginSuccess}) {
   });
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   useEffect(() => {
     const savedUser = getStoredUser();
@@ -53,17 +60,28 @@ export default function Login({onLoginSuccess}) {
     }
 
     setLoading(true);
+    setLoginError("");
 
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    const usuario = { email, senha };
+    const usuarioSalvo = getStoredUser();
+    const emailDigitado = email.trim().toLowerCase();
+    const senhaDigitada = senha;
 
-    if (typeof globalThis !== "undefined" && "localStorage" in globalThis) {
-      globalThis.localStorage.setItem(
-        "usuarioLogado",
-        JSON.stringify({ email, senha }),
-      );
+    const credenciaisValidas =
+      usuarioSalvo &&
+      usuarioSalvo.email &&
+      usuarioSalvo.senha &&
+      usuarioSalvo.email.toLowerCase() === emailDigitado &&
+      usuarioSalvo.senha === senhaDigitada;
+
+    if (!credenciaisValidas) {
+      setLoginError("E-mail ou senha inválidos.");
+      setLoading(false);
+      return;
     }
+
+    const usuario = { email: usuarioSalvo.email, senha: usuarioSalvo.senha };
 
     setLoading(false);
     onLoginSuccess?.(usuario);
@@ -171,6 +189,10 @@ export default function Login({onLoginSuccess}) {
           A senha deve ter entre 9 e 254 caracteres.
         </HelperText>
 
+        <HelperText type="error" visible={!!loginError}>
+          {loginError}
+        </HelperText>
+
         <Button
           mode="contained"
           onPress={handleLogin}
@@ -206,7 +228,7 @@ export default function Login({onLoginSuccess}) {
               ? theme.colors.primary
               : theme.colors.onSurfaceVariant ?? theme.colors.onSurface
           }
-          onPress={() => console.log("Cadastre-se")}
+          onPress={() => navigation?.navigate?.("Cadastro")}
           onMouseEnter={() => setTextHover({ text: "Cadastre-se", hover: true })}
           onMouseLeave={() => setTextHover({ text: "", hover: false })}
         >
