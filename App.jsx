@@ -4,11 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme, View, Text, TouchableOpacity } from "react-native";
 import { MD3LightTheme, MD3DarkTheme, PaperProvider, IconButton, Icon } from "react-native-paper";
 import { useState, useEffect } from "react";
-import { getStoredUser } from "./src/features/Usuario/Login";
+import Toast from "react-native-toast-message";
+import { getStoredUser } from "./src/features/Usuario/usuario.storage";
 // import Icon from "./src/assets/icon.png"
 
-import Login from "./src/features/Usuario/Login";
-import Cadastro from "./src/features/Usuario/Cadastro";
+import Login from "./src/features/Usuario/screens/Login";
+import Cadastro from "./src/features/Usuario/screens/Cadastro";
 import Dashboard from "./src/features/Dashboard";
 
 const Tab = createBottomTabNavigator();
@@ -31,7 +32,7 @@ export default function App() {
   useEffect(() => {
     const usuario = getStoredUser();
     if (usuario) {
-      setNome(usuario.nome);
+      setNome(usuario.nome || usuario.email);
       setIsLogged(true);
     }
   }, []);
@@ -79,13 +80,14 @@ export default function App() {
                   iconName = "home-outline";
               }
 
-              return <Ionicons name={iconName} size={size} color={color} />;
+              return <Ionicons name={iconName} size={20} color={color} />;
             },
 
             headerShown: true,
 
             headerStyle: {
               backgroundColor: theme.colors.surface,
+              height: 60,
             },
 
             headerTintColor: theme.colors.onSurface,
@@ -139,7 +141,7 @@ export default function App() {
 
             tabBarStyle: {
               backgroundColor: theme.colors.surface,
-              height: 70,
+              height: 65,
               paddingBottom: 8,
               paddingTop: 8,
               borderTopWidth: 0,
@@ -151,7 +153,7 @@ export default function App() {
             tabBarInactiveTintColor: isDark ? "#777" : "#777",
 
             tabBarLabelStyle: {
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: "600",
             },
           })}
@@ -165,7 +167,7 @@ export default function App() {
                 {(props) => <Login
                           {...props}
                           onLoginSuccess={(usuario) => {
-                            setEmail(usuario.email);
+                            setNome(usuario.nome || usuario.email);
                             setIsLogged(true);
                           }}
                         />}
@@ -177,6 +179,7 @@ export default function App() {
           
         </Tab.Navigator>
       </NavigationContainer>
+      <Toast />
     </PaperProvider>
   );
 }

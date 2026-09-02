@@ -10,6 +10,7 @@ import {
   useTheme,
 } from "react-native-paper";
 
+
 export default function Dashboard() {
   const theme = useTheme();
 

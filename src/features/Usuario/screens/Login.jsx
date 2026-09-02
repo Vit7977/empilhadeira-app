@@ -7,13 +7,27 @@ import {
   HelperText,
   useTheme,
 } from "react-native-paper";
-import { saveStoredUser } from "./Login";
+import { useLogin } from "../hooks/useLogin";
 
-export default function Cadastro({ navigation }) {
+export { getStoredUser, saveStoredUser } from "../usuario.storage.js";
+
+export default function Login({ onLoginSuccess, navigation }) {
   const theme = useTheme();
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+  const {
+    email,
+    setEmail,
+    senha,
+    setSenha,
+    mostrarSenha,
+    toggleMostrarSenha,
+    loading,
+    loginError,
+    emailInvalido,
+    senhaInvalida,
+    formularioInvalido,
+    handleLogin,
+  } = useLogin({ onLoginSuccess });
+
   const [inputFocus, setInputFocus] = useState({
     input: "",
     focus: false,
@@ -22,37 +36,6 @@ export default function Cadastro({ navigation }) {
     text: "",
     hover: false,
   });
-  const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const nomeInvalido = !!nome && nome.trim().length < 2;
-  const emailInvalido = !!email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const senhaInvalida =
-  !!senha && (senha.length <= 8 || senha.length >= 255);
-
-  async function handleCadastro() {
-    if (!nome || !email || !senha || nomeInvalido || emailInvalido || senhaInvalida) {
-      return;
-    }
-
-    setLoading(true);
-
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    const usuario = {
-      nome: nome.trim(),
-      email: email.trim().toLowerCase(),
-      senha,
-    };
-
-    saveStoredUser(usuario);
-
-    setLoading(false);
-    navigation?.navigate?.("Login");
-  }
-
-  const formularioInvalido =
-    !nome || !email || !senha || nomeInvalido || emailInvalido || senhaInvalida;
 
   return (
     <View
@@ -60,50 +43,12 @@ export default function Cadastro({ navigation }) {
     >
       <View style={styles.form}>
         <Text variant="headlineLarge" style={styles.title}>
-          Cadastrar
+          Entrar
         </Text>
 
         <Text variant="bodyLarge" style={styles.subtitle}>
-          Cadastre-se para acessar o aplicativo
+          Entre na sua conta para continuar
         </Text>
-
-        <TextInput
-          label="Nome"
-          value={nome}
-          onChangeText={setNome}
-          mode="outlined"
-          keyboardType="default"
-          autoCapitalize="words"
-          autoComplete="name"
-          outlineColor="gray"
-          activeOutlineColor={theme.colors.primary}
-          onFocus={() =>
-            setInputFocus({
-              input: "Nome",
-              focus: true,
-            })
-          }
-          onBlur={() =>
-            setInputFocus({
-              input: "",
-              focus: false,
-            })
-          }
-          left={
-            <TextInput.Icon
-              icon="account-outline"
-              color={
-                inputFocus.focus && inputFocus.input === "Nome"
-                  ? theme.colors.primary
-                  : "gray"
-              }
-            />
-          }
-        />
-
-        <HelperText type="error" visible={nomeInvalido}>
-          Digite um nome com pelo menos 2 letras.
-        </HelperText>
 
         <TextInput
           label="E-mail"
@@ -178,41 +123,62 @@ export default function Cadastro({ navigation }) {
           right={
             <TextInput.Icon
               icon={mostrarSenha ? "eye-off" : "eye"}
-              onPress={() => setMostrarSenha((prev) => !prev)}
+              onPress={toggleMostrarSenha}
               forceTextInputFocus={false}
             />
           }
         />
 
         <HelperText type="error" visible={senhaInvalida}>
-          A senha deve ter entre 9 e 254 caracteres.
+          A senha deve ter no mínimo 8 caracteres.
         </HelperText>
 
+        {!!loginError && (
+          <HelperText type="error" visible={true}>
+            {loginError}
+          </HelperText>
+        )}
 
         <Button
           mode="contained"
-          onPress={handleCadastro}
+          onPress={handleLogin}
           loading={loading}
           disabled={formularioInvalido || loading}
           buttonColor={theme.colors.primary}
           style={styles.button}
           contentStyle={styles.buttonContent}
         >
-          Cadastrar
+          Entrar
         </Button>
 
         <Button
           mode="text"
           textColor={
-            textHover.hover && textHover.text === "Já tem conta"
+            textHover.hover && textHover.text === "Esqueci minha senha"
               ? theme.colors.primary
               : theme.colors.onSurfaceVariant ?? theme.colors.onSurface
           }
-          onPress={() => navigation?.navigate?.("Login")}
-          onMouseEnter={() => setTextHover({ text: "Já tem conta", hover: true })}
+          onPress={() => console.log("Esqueci minha senha")}
+          onMouseEnter={() =>
+            setTextHover({ text: "Esqueci minha senha", hover: true })
+          }
           onMouseLeave={() => setTextHover({ text: "", hover: false })}
         >
-          Já tem conta? Entrar
+          Esqueci minha senha
+        </Button>
+
+        <Button
+          mode="text"
+          textColor={
+            textHover.hover && textHover.text === "Cadastre-se"
+              ? theme.colors.primary
+              : theme.colors.onSurfaceVariant ?? theme.colors.onSurface
+          }
+          onPress={() => navigation?.navigate?.("Cadastro")}
+          onMouseEnter={() => setTextHover({ text: "Cadastre-se", hover: true })}
+          onMouseLeave={() => setTextHover({ text: "", hover: false })}
+        >
+          Não tem uma conta? Cadastre-se
         </Button>
       </View>
     </View>
