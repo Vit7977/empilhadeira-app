@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View, ScrollView } from "react-native";
+import { StyleSheet, View, ScrollView, RefreshControl } from "react-native";
 import {
   Text,
   Card,
@@ -9,23 +9,88 @@ import {
   Divider,
   useTheme,
 } from "react-native-paper";
+import useEmpilhadeira from "./Empilhadeira/useEmpilhadeira";
+import useTelemetria from "./Telemetria/useTelemetria";
 
 
-export default function Dashboard() {
+export default function Dashboard({ route }) {
   const theme = useTheme();
 
-  // Dados simulados da empilhadeira
-  const empilhadeira = {
-    codigo: "EMP-001",
-    status: "Operando",
-    bateria: 82,
-    velocidade: 12.5,
-    pesoCarga: 850,
-    temperatura: 32,
-    posicaoX: 14.5,
-    posicaoY: 8.2,
-    obstaculo: false,
+  // Pega o id da empilhadeira via parâmetros de rota ou assume o padrão 1
+  const empilhadeiraId = route?.params?.id || 1;
+
+  const {
+    selectedEmpilhadeira,
+    loading: loadingEmpilhadeira,
+    refreshing: refreshingEmpilhadeira,
+    refresh: refreshEmpilhadeira,
+  } = useEmpilhadeira({
+    id: empilhadeiraId,
+  });
+
+  // Busca a última telemetria e atualiza automaticamente quando uma nova for enviada (polling 3s)
+  const {
+    telemetria,
+    loading: loadingTelemetria,
+    refreshing: refreshingTelemetria,
+    refreshTelemetria,
+    error: erroTelemetria,
+  } = useTelemetria({
+    empilhadeiraId,
+    pollingInterval: 3000,
+  });
+
+  const loading = loadingEmpilhadeira;
+  const refreshing = refreshingEmpilhadeira || refreshingTelemetria;
+
+  const handleRefresh = async () => {
+    await Promise.all([refreshEmpilhadeira(), refreshTelemetria()]);
   };
+
+  // Mescla os dados cadastrais da empilhadeira com a telemetria mais recente
+  const empilhadeira = {
+    // Identificação
+    codigo: selectedEmpilhadeira?.codigo,
+    status: selectedEmpilhadeira?.status,
+
+    // Sensores vindos da última telemetria
+    bateria:
+      telemetria?.nivel_bateria != null
+        ? Number(telemetria.nivel_bateria)
+        : 82,
+    velocidade:
+      telemetria?.velocidade != null
+        ? parseFloat(telemetria.velocidade)
+        : 12.5,
+    pesoCarga:
+      telemetria?.peso_carga != null
+        ? parseFloat(telemetria.peso_carga)
+        : 850,
+    temperatura:
+      telemetria?.temperatura != null
+        ? parseFloat(telemetria.temperatura)
+        : 32,
+    posicaoX:
+      telemetria?.posicao_x != null
+        ? Number(telemetria.posicao_x)
+        : 14.5,
+    posicaoY:
+      telemetria?.posicao_y != null
+        ? Number(telemetria.posicao_y)
+        : 8.2,
+    obstaculo:
+      telemetria?.obstaculo != null
+        ? Boolean(Number(telemetria.obstaculo))
+        : false,
+    sensorLinha: telemetria?.sensor_linha ?? "",
+    dataHora: telemetria?.data_hora ?? null,
+
+    ...selectedEmpilhadeira,
+  };
+
+  const horaFormatada = empilhadeira.dataHora
+    ? new Date(empilhadeira.dataHora).toLocaleTimeString("pt-BR")
+    : null;
 
   return (
     <ScrollView
@@ -35,6 +100,14 @@ export default function Dashboard() {
       ]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={[theme.colors.primary]}
+          tintColor={theme.colors.primary}
+        />
+      }
     >
       {/* Cabeçalho */}
       <View style={styles.header}>
@@ -50,7 +123,9 @@ export default function Dashboard() {
               { color: theme.colors.onSurfaceVariant },
             ]}
           >
-            Monitoramento da empilhadeira
+            {horaFormatada
+              ? `Última telemetria: ${horaFormatada}`
+              : "Monitoramento da empilhadeira"}
           </Text>
         </View>
 
@@ -83,24 +158,29 @@ export default function Dashboard() {
                 variant="labelMedium"
                 style={{ color: theme.colors.onSurfaceVariant }}
               >
-                EMPILHADEIRA
+                EMPILHADEIRA #{selectedEmpilhadeira?.id || empilhadeiraId}
               </Text>
 
               <Text variant="titleLarge">
-                {empilhadeira.codigo}
+                {loading && !selectedEmpilhadeira ? "Carregando..." : empilhadeira.codigo}
               </Text>
             </View>
 
             <Chip
-              icon="circle"
+              icon={
+                empilhadeira.status?.toLowerCase() === "disponivel"
+                  ? "check-circle"
+                  : "circle"
+              }
               style={{
                 backgroundColor: theme.colors.primaryContainer,
               }}
               textStyle={{
                 color: theme.colors.primary,
+                textTransform: "capitalize",
               }}
             >
-              {empilhadeira.status}
+              {loading && !selectedEmpilhadeira ? "Carregando..." : empilhadeira.status}
             </Chip>
           </View>
         </Card.Content>
@@ -137,8 +217,11 @@ export default function Dashboard() {
           </View>
 
           <ProgressBar
-            progress={empilhadeira.bateria / 100}
-            color={theme.colors.primary}
+            progress={Math.min(
+              Math.max((empilhadeira.bateria || 0) / 100, 0),
+              1
+            )}
+            color={empilhadeira.bateria <= 15 ? "red" : "lime"}
             style={styles.progress}
           />
 
@@ -424,12 +507,19 @@ export default function Dashboard() {
             </View>
 
             <Chip
-              icon="check"
+              icon={erroTelemetria ? "alert-circle" : "check"}
               style={{
-                backgroundColor: theme.colors.primaryContainer,
+                backgroundColor: erroTelemetria
+                  ? theme.colors.errorContainer
+                  : theme.colors.primaryContainer,
+              }}
+              textStyle={{
+                color: erroTelemetria
+                  ? theme.colors.error
+                  : theme.colors.primary,
               }}
             >
-              Online
+              {erroTelemetria ? "Offline" : "Online"}
             </Chip>
           </View>
 
