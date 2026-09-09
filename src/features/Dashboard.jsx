@@ -158,10 +158,10 @@ export default function Dashboard({ route }) {
                 variant="labelMedium"
                 style={{ color: theme.colors.onSurfaceVariant }}
               >
-                EMPILHADEIRA #{selectedEmpilhadeira?.id || empilhadeiraId}
+                EMPILHADEIRA {selectedEmpilhadeira?.id || empilhadeiraId}
               </Text>
 
-              <Text variant="titleLarge">
+              <Text variant="titleLarge" style={{ fontSize: 16, fontWeight: "bold" }}>
                 {loading && !selectedEmpilhadeira ? "Carregando..." : empilhadeira.codigo}
               </Text>
             </View>
@@ -224,16 +224,7 @@ export default function Dashboard({ route }) {
             color={empilhadeira.bateria <= 15 ? "red" : "lime"}
             style={styles.progress}
           />
-
-          <Text
-            variant="bodySmall"
-            style={{
-              color: theme.colors.onSurfaceVariant,
-              marginTop: 8,
-            }}
-          >
-            Nível atual da bateria
-          </Text>
+          
         </Card.Content>
       </Card>
 

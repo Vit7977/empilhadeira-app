@@ -2,12 +2,15 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme, View, Text, TouchableOpacity } from "react-native";
+import { useFuncionario } from "./src/features/Funcionario/hooks/useFuncionario.js";
+
 import {
   MD3LightTheme,
   MD3DarkTheme,
   PaperProvider,
   Icon,
 } from "react-native-paper";
+
 import { useState, useEffect } from "react";
 import Toast from "react-native-toast-message";
 
@@ -17,7 +20,8 @@ import {
 } from "./src/features/Usuario/usuario.storage";
 
 import Login from "./src/features/Usuario/screens/Login";
-import Cadastro from "./src/features/Usuario/screens/Cadastro";
+import CadastroUsuario from "./src/features/Usuario/screens/CadastroUsuario";
+import CadastroFuncionario from "./src/features/Funcionario/screens/CadastroFuncionario";
 import Dashboard from "./src/features/Dashboard";
 
 const Tab = createBottomTabNavigator();
@@ -26,8 +30,18 @@ export default function App() {
   const colorScheme = useColorScheme();
 
   const [usuario, setUsuario] = useState(null);
+  const [funcionario, setFuncionario] = useState(null);
   const [isLogged, setIsLogged] = useState(false);
 
+  const { funcionarios } = useFuncionario();
+
+  const funcUser = funcionarios.find((f) => f.id === usuario?.funcionario);
+
+  useEffect(() => {
+    setFuncionario(funcUser || null);
+  }, [funcUser]);
+
+  // Recupera o usuário salvo
   useEffect(() => {
     const usuarioSalvo = getStoredUser();
 
@@ -37,6 +51,7 @@ export default function App() {
     }
   }, []);
 
+  // Logout
   const handleLogout = () => {
     removeStoredUser();
 
@@ -44,14 +59,17 @@ export default function App() {
     setIsLogged(false);
   };
 
+  // Login realizado
   const handleLoginSuccess = (dadosUsuario) => {
     setUsuario(dadosUsuario);
     setIsLogged(true);
   };
 
+  // Verifica se é administrador
   const isAdmin =
     usuario?.nivel_acesso?.trim().toLowerCase() === "admin";
 
+  // Tema
   const theme =
     colorScheme === "dark"
       ? {
@@ -78,8 +96,13 @@ export default function App() {
       <NavigationContainer>
         <Tab.Navigator
           screenOptions={({ route }) => ({
-            tabBarIcon: ({ focused, color }) => {
-              let iconName = "home-outline";
+            /*
+             * ============================
+             * ÍCONES DAS ABAS
+             * ============================
+             */
+            tabBarIcon: ({ focused }) => {
+              let iconName;
 
               switch (route.name) {
                 case "Dashboard":
@@ -90,7 +113,12 @@ export default function App() {
                   iconName = focused ? "person" : "person-outline";
                   break;
 
-                case "Cadastro":
+                case "Cadastro Funcionario":
+                  iconName = focused
+                    ? "person-add"
+                    : "person-add-outline";
+                    
+                case "Cadastro Usuário":
                   iconName = focused
                     ? "person-add"
                     : "person-add-outline";
@@ -103,12 +131,21 @@ export default function App() {
               return (
                 <Ionicons
                   name={iconName}
-                  size={20}
-                  color={color}
+                  size={25}
+                  color={
+                    focused
+                      ? theme.colors.primary
+                      : theme.colors.onSurfaceVariant
+                  }
                 />
               );
             },
 
+            /*
+             * ============================
+             * HEADER
+             * ============================
+             */
             headerShown: true,
 
             headerStyle: {
@@ -124,6 +161,11 @@ export default function App() {
               color: theme.colors.onSurface,
             },
 
+            /*
+             * ============================
+             * USUÁRIO + LOGOUT
+             * ============================
+             */
             headerRight: () =>
               isLogged ? (
                 <View
@@ -146,7 +188,7 @@ export default function App() {
                       flexShrink: 1,
                     }}
                   >
-                    {usuario?.nome || usuario?.email}
+                    {funcionario?.nome || usuario?.email}
                   </Text>
 
                   <TouchableOpacity
@@ -167,6 +209,11 @@ export default function App() {
                 </View>
               ) : null,
 
+            /*
+             * ============================
+             * BARRA INFERIOR
+             * ============================
+             */
             tabBarStyle: {
               backgroundColor: theme.colors.surface,
               height: 65,
@@ -176,18 +223,28 @@ export default function App() {
               elevation: 0,
             },
 
+            /*
+             * COR DO ÍCONE/TEXTO ATIVO
+             */
             tabBarActiveTintColor: theme.colors.primary,
 
-            tabBarInactiveTintColor: isDark ? "#777" : "#777",
+            /*
+             * COR DO ÍCONE/TEXTO INATIVO
+             */
+            tabBarInactiveTintColor: "#777777",
 
+            /*
+             * TEXTO DAS ABAS
+             */
             tabBarLabelStyle: {
               fontSize: 10,
               fontWeight: "600",
             },
           })}
         >
-
-          {/* USUÁRIO NÃO LOGADO */}
+          {/* ============================
+              LOGIN
+          ============================ */}
           {!isLogged && (
             <Tab.Screen name="Login">
               {(props) => (
@@ -199,25 +256,33 @@ export default function App() {
             </Tab.Screen>
           )}
 
-          {/* USUÁRIO LOGADO */}
+          {/* ============================
+              USUÁRIO LOGADO
+          ============================ */}
           {isLogged && (
             <>
-              {/* TODOS OS NÍVEIS PODEM ACESSAR O DASHBOARD */}
+              {/* Dashboard aparece para todos */}
               <Tab.Screen
                 name="Dashboard"
                 component={Dashboard}
               />
 
-              {/* SOMENTE ADMIN PODE VER O CADASTRO */}
+              {/* Cadastro aparece somente para ADMIN */}
               {isAdmin && (
                 <Tab.Screen
-                  name="Cadastro"
-                  component={Cadastro}
+                  name="Cadastro Usuário"
+                  component={CadastroUsuario}
+                />
+              )}
+
+              {isAdmin && (
+                <Tab.Screen
+                  name="Cadastro Funcionario"
+                  component={CadastroFuncionario}
                 />
               )}
             </>
           )}
-
         </Tab.Navigator>
       </NavigationContainer>
 
