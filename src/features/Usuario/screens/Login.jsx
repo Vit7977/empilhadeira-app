@@ -167,19 +167,6 @@ export default function Login({ onLoginSuccess, navigation }) {
           Esqueci minha senha
         </Button>
 
-        <Button
-          mode="text"
-          textColor={
-            textHover.hover && textHover.text === "Cadastre-se"
-              ? theme.colors.primary
-              : theme.colors.onSurfaceVariant ?? theme.colors.onSurface
-          }
-          onPress={() => navigation?.navigate?.("Cadastro")}
-          onMouseEnter={() => setTextHover({ text: "Cadastre-se", hover: true })}
-          onMouseLeave={() => setTextHover({ text: "", hover: false })}
-        >
-          Não tem uma conta? Cadastre-se
-        </Button>
       </View>
     </View>
   );
