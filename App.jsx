@@ -78,13 +78,14 @@ export default function App() {
             ...MD3DarkTheme.colors,
             primary: "#ffd900",
             neutral: "#ffffff",
+            secondaryContainer: "#292929ff",
           },
         }
       : {
           ...MD3LightTheme,
           colors: {
             ...MD3LightTheme.colors,
-            primary: "#ff0000",
+            primary: "#004ec4ff",
             neutral: "#000000",
           },
         };

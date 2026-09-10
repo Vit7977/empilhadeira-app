@@ -12,11 +12,9 @@ import {
 import useEmpilhadeira from "./Empilhadeira/useEmpilhadeira";
 import useTelemetria from "./Telemetria/useTelemetria";
 
-
 export default function Dashboard({ route }) {
   const theme = useTheme();
 
-  // Pega o id da empilhadeira via parâmetros de rota ou assume o padrão 1
   const empilhadeiraId = route?.params?.id || 1;
 
   const {
@@ -28,7 +26,6 @@ export default function Dashboard({ route }) {
     id: empilhadeiraId,
   });
 
-  // Busca a última telemetria e atualiza automaticamente quando uma nova for enviada (polling 3s)
   const {
     telemetria,
     loading: loadingTelemetria,
@@ -47,37 +44,22 @@ export default function Dashboard({ route }) {
     await Promise.all([refreshEmpilhadeira(), refreshTelemetria()]);
   };
 
-  // Mescla os dados cadastrais da empilhadeira com a telemetria mais recente
   const empilhadeira = {
-    // Identificação
     codigo: selectedEmpilhadeira?.codigo,
     status: selectedEmpilhadeira?.status,
 
-    // Sensores vindos da última telemetria
     bateria:
-      telemetria?.nivel_bateria != null
-        ? Number(telemetria.nivel_bateria)
-        : 82,
+      telemetria?.nivel_bateria != null ? Number(telemetria.nivel_bateria) : 82,
     velocidade:
-      telemetria?.velocidade != null
-        ? parseFloat(telemetria.velocidade)
-        : 12.5,
+      telemetria?.velocidade != null ? parseFloat(telemetria.velocidade) : 12.5,
     pesoCarga:
-      telemetria?.peso_carga != null
-        ? parseFloat(telemetria.peso_carga)
-        : 850,
+      telemetria?.peso_carga != null ? parseFloat(telemetria.peso_carga) : 850,
     temperatura:
-      telemetria?.temperatura != null
-        ? parseFloat(telemetria.temperatura)
-        : 32,
+      telemetria?.temperatura != null ? parseFloat(telemetria.temperatura) : 32,
     posicaoX:
-      telemetria?.posicao_x != null
-        ? Number(telemetria.posicao_x)
-        : 14.5,
+      telemetria?.posicao_x != null ? Number(telemetria.posicao_x) : 14.5,
     posicaoY:
-      telemetria?.posicao_y != null
-        ? Number(telemetria.posicao_y)
-        : 8.2,
+      telemetria?.posicao_y != null ? Number(telemetria.posicao_y) : 8.2,
     obstaculo:
       telemetria?.obstaculo != null
         ? Boolean(Number(telemetria.obstaculo))
@@ -94,10 +76,7 @@ export default function Dashboard({ route }) {
 
   return (
     <ScrollView
-      style={[
-        styles.container,
-        { backgroundColor: theme.colors.background },
-      ]}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -109,7 +88,6 @@ export default function Dashboard({ route }) {
         />
       }
     >
-      {/* Cabeçalho */}
       <View style={styles.header}>
         <View>
           <Text variant="headlineMedium" style={styles.title}>
@@ -118,10 +96,7 @@ export default function Dashboard({ route }) {
 
           <Text
             variant="bodyMedium"
-            style={[
-              styles.subtitle,
-              { color: theme.colors.onSurfaceVariant },
-            ]}
+            style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}
           >
             {horaFormatada
               ? `Última telemetria: ${horaFormatada}`
@@ -132,23 +107,16 @@ export default function Dashboard({ route }) {
         <View
           style={[
             styles.statusIcon,
-            { backgroundColor: theme.colors.primaryContainer },
+            { backgroundColor: theme.colors.secondaryContainer },
           ]}
         >
-          <Icon
-            source="forklift"
-            size={30}
-            color={theme.colors.primary}
-          />
+          <Icon source="forklift" size={30} color={theme.colors.primary} />
         </View>
       </View>
 
       {/* Identificação da empilhadeira */}
       <Card
-        style={[
-          styles.card,
-          { backgroundColor: theme.colors.surface },
-        ]}
+        style={[styles.card, { backgroundColor: theme.colors.surface }]}
         mode="elevated"
       >
         <Card.Content>
@@ -161,8 +129,13 @@ export default function Dashboard({ route }) {
                 EMPILHADEIRA {selectedEmpilhadeira?.id || empilhadeiraId}
               </Text>
 
-              <Text variant="titleLarge" style={{ fontSize: 16, fontWeight: "bold" }}>
-                {loading && !selectedEmpilhadeira ? "Carregando..." : empilhadeira.codigo}
+              <Text
+                variant="titleLarge"
+                style={{ fontSize: 16, fontWeight: "bold" }}
+              >
+                {loading && !selectedEmpilhadeira
+                  ? "Carregando..."
+                  : empilhadeira.codigo}
               </Text>
             </View>
 
@@ -173,14 +146,16 @@ export default function Dashboard({ route }) {
                   : "circle"
               }
               style={{
-                backgroundColor: theme.colors.primaryContainer,
+                backgroundColor: theme.colors.secondaryContainer,
               }}
               textStyle={{
                 color: theme.colors.primary,
                 textTransform: "capitalize",
               }}
             >
-              {loading && !selectedEmpilhadeira ? "Carregando..." : empilhadeira.status}
+              {loading && !selectedEmpilhadeira
+                ? "Carregando..."
+                : empilhadeira.status}
             </Chip>
           </View>
         </Card.Content>
@@ -188,30 +163,26 @@ export default function Dashboard({ route }) {
 
       {/* Bateria */}
       <Card
-        style={[
-          styles.card,
-          { backgroundColor: theme.colors.surface },
-        ]}
+        style={[styles.card, { backgroundColor: theme.colors.surface }]}
         mode="elevated"
       >
         <Card.Content>
           <View style={styles.cardHeader}>
             <View style={styles.cardTitle}>
-              <Icon
-                source="battery"
-                size={24}
-                color={theme.colors.primary}
-              />
+              {empilhadeira.bateria <= 15 ? (
+                <Icon
+                  source="battery-low"
+                  size={24}
+                  color={theme.colors.primary}
+                />
+              ) : (
+                <Icon source="battery" size={24} color={theme.colors.primary} />
+              )}
 
-              <Text variant="titleMedium">
-                Bateria
-              </Text>
+              <Text variant="titleMedium">Bateria</Text>
             </View>
 
-            <Text
-              variant="titleLarge"
-              style={{ color: theme.colors.primary }}
-            >
+            <Text variant="titleLarge" style={{ color: theme.colors.primary }}>
               {empilhadeira.bateria}%
             </Text>
           </View>
@@ -219,43 +190,29 @@ export default function Dashboard({ route }) {
           <ProgressBar
             progress={Math.min(
               Math.max((empilhadeira.bateria || 0) / 100, 0),
-              1
+              1,
             )}
             color={empilhadeira.bateria <= 15 ? "red" : "lime"}
             style={styles.progress}
           />
-          
         </Card.Content>
       </Card>
 
       {/* Estatísticas */}
-      <Text
-        variant="titleLarge"
-        style={styles.sectionTitle}
-      >
+      <Text variant="titleLarge" style={styles.sectionTitle}>
         Estatísticas
       </Text>
 
       <View style={styles.statsGrid}>
         {/* Velocidade */}
         <Card
-          style={[
-            styles.statCard,
-            { backgroundColor: theme.colors.surface },
-          ]}
+          style={[styles.statCard, { backgroundColor: theme.colors.surface }]}
           mode="elevated"
         >
           <Card.Content>
-            <Icon
-              source="speedometer"
-              size={28}
-              color={theme.colors.primary}
-            />
+            <Icon source="speedometer" size={28} color={theme.colors.primary} />
 
-            <Text
-              variant="headlineSmall"
-              style={styles.statValue}
-            >
+            <Text variant="headlineSmall" style={styles.statValue}>
               {empilhadeira.velocidade}
             </Text>
 
@@ -266,18 +223,13 @@ export default function Dashboard({ route }) {
               km/h
             </Text>
 
-            <Text variant="labelMedium">
-              Velocidade
-            </Text>
+            <Text variant="labelMedium">Velocidade</Text>
           </Card.Content>
         </Card>
 
         {/* Peso */}
         <Card
-          style={[
-            styles.statCard,
-            { backgroundColor: theme.colors.surface },
-          ]}
+          style={[styles.statCard, { backgroundColor: theme.colors.surface }]}
           mode="elevated"
         >
           <Card.Content>
@@ -287,10 +239,7 @@ export default function Dashboard({ route }) {
               color={theme.colors.primary}
             />
 
-            <Text
-              variant="headlineSmall"
-              style={styles.statValue}
-            >
+            <Text variant="headlineSmall" style={styles.statValue}>
               {empilhadeira.pesoCarga}
             </Text>
 
@@ -301,46 +250,29 @@ export default function Dashboard({ route }) {
               kg
             </Text>
 
-            <Text variant="labelMedium">
-              Carga
-            </Text>
+            <Text variant="labelMedium">Carga</Text>
           </Card.Content>
         </Card>
 
         {/* Temperatura */}
         <Card
-          style={[
-            styles.statCard,
-            { backgroundColor: theme.colors.surface },
-          ]}
+          style={[styles.statCard, { backgroundColor: theme.colors.surface }]}
           mode="elevated"
         >
           <Card.Content>
-            <Icon
-              source="thermometer"
-              size={28}
-              color={theme.colors.primary}
-            />
+            <Icon source="thermometer" size={28} color={theme.colors.primary} />
 
-            <Text
-              variant="headlineSmall"
-              style={styles.statValue}
-            >
+            <Text variant="headlineSmall" style={styles.statValue}>
               {empilhadeira.temperatura}°C
             </Text>
 
-            <Text variant="labelMedium">
-              Temperatura
-            </Text>
+            <Text variant="labelMedium">Temperatura</Text>
           </Card.Content>
         </Card>
 
         {/* Obstáculo */}
         <Card
-          style={[
-            styles.statCard,
-            { backgroundColor: theme.colors.surface },
-          ]}
+          style={[styles.statCard, { backgroundColor: theme.colors.surface }]}
           mode="elevated"
         >
           <Card.Content>
@@ -365,31 +297,21 @@ export default function Dashboard({ route }) {
                 },
               ]}
             >
-              {empilhadeira.obstaculo
-                ? "Detectado"
-                : "Livre"}
+              {empilhadeira.obstaculo ? "Detectado" : "Livre"}
             </Text>
 
-            <Text variant="labelMedium">
-              Obstáculo
-            </Text>
+            <Text variant="labelMedium">Obstáculo</Text>
           </Card.Content>
         </Card>
       </View>
 
       {/* Localização */}
-      <Text
-        variant="titleLarge"
-        style={styles.sectionTitle}
-      >
+      <Text variant="titleLarge" style={styles.sectionTitle}>
         Localização
       </Text>
 
       <Card
-        style={[
-          styles.card,
-          { backgroundColor: theme.colors.surface },
-        ]}
+        style={[styles.card, { backgroundColor: theme.colors.surface }]}
         mode="elevated"
       >
         <Card.Content>
@@ -401,9 +323,7 @@ export default function Dashboard({ route }) {
                 color={theme.colors.primary}
               />
 
-              <Text variant="titleMedium">
-                Posição atual
-              </Text>
+              <Text variant="titleMedium">Posição atual</Text>
             </View>
           </View>
 
@@ -420,9 +340,7 @@ export default function Dashboard({ route }) {
                 EIXO X
               </Text>
 
-              <Text variant="headlineSmall">
-                {empilhadeira.posicaoX} m
-              </Text>
+              <Text variant="headlineSmall">{empilhadeira.posicaoX} m</Text>
             </View>
 
             <View style={styles.positionItem}>
@@ -435,66 +353,29 @@ export default function Dashboard({ route }) {
                 EIXO Y
               </Text>
 
-              <Text variant="headlineSmall">
-                {empilhadeira.posicaoY} m
-              </Text>
+              <Text variant="headlineSmall">{empilhadeira.posicaoY} m</Text>
             </View>
           </View>
         </Card.Content>
       </Card>
 
       {/* Status dos sensores */}
-      <Text
-        variant="titleLarge"
-        style={styles.sectionTitle}
-      >
+      <Text variant="titleLarge" style={styles.sectionTitle}>
         Sistema
       </Text>
 
       <Card
-        style={[
-          styles.card,
-          { backgroundColor: theme.colors.surface },
-        ]}
+        style={[styles.card, { backgroundColor: theme.colors.surface }]}
         mode="elevated"
       >
         <Card.Content>
-          <View style={styles.systemRow}>
-            <View style={styles.systemLeft}>
-              <Icon
-                source="radar"
-                size={24}
-                color={theme.colors.primary}
-              />
 
-              <Text variant="bodyLarge">
-                Sensores
-              </Text>
-            </View>
-
-            <Chip
-              icon="check"
-              style={{
-                backgroundColor: theme.colors.primaryContainer,
-              }}
-            >
-              Normal
-            </Chip>
-          </View>
-
-          <Divider style={styles.divider} />
 
           <View style={styles.systemRow}>
             <View style={styles.systemLeft}>
-              <Icon
-                source="wifi"
-                size={24}
-                color={theme.colors.primary}
-              />
+              <Icon source="wifi" size={24} color={theme.colors.primary} />
 
-              <Text variant="bodyLarge">
-                Conexão
-              </Text>
+              <Text variant="bodyLarge">Conexão</Text>
             </View>
 
             <Chip
@@ -502,7 +383,7 @@ export default function Dashboard({ route }) {
               style={{
                 backgroundColor: erroTelemetria
                   ? theme.colors.errorContainer
-                  : theme.colors.primaryContainer,
+                  : theme.colors.secondaryContainer,
               }}
               textStyle={{
                 color: erroTelemetria
@@ -524,15 +405,13 @@ export default function Dashboard({ route }) {
                 color={theme.colors.primary}
               />
 
-              <Text variant="bodyLarge">
-                Navegação
-              </Text>
+              <Text variant="bodyLarge">Navegação</Text>
             </View>
 
             <Chip
               icon="check"
               style={{
-                backgroundColor: theme.colors.primaryContainer,
+                backgroundColor: theme.colors.secondaryContainer,
               }}
             >
               Ativa
