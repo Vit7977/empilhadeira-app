@@ -101,10 +101,10 @@ export function useCadastro({ navigation } = {}) {
     };
 
     try {
-      console.log(
-        "Enviando funcionário:",
-        funcionario
-      );
+      // console.log(
+      //   "Enviando funcionário:",
+      //   funcionario
+      // );
 
       const response =
         await createFuncionario(funcionario);

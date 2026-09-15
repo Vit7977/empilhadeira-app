@@ -179,6 +179,8 @@ export default function App() {
                     paddingHorizontal: 6,
                   }}
                 >
+                  <View style={{flex: 1, flexDirection: "column", alignItems: "center", maxWidth: "70%"}}>
+
                   <Text
                     numberOfLines={1}
                     ellipsizeMode="tail"
@@ -188,9 +190,13 @@ export default function App() {
                       marginRight: 8,
                       flexShrink: 1,
                     }}
-                  >
+                    >
                     {funcionario?.nome || usuario?.email}
                   </Text>
+                    <Text style={{color: "#00b7ffff", fontSize: 10, fontWeight: "bold"}}>
+                      {usuario?.nivel_acesso.toUpperCase()}
+                    </Text>
+                  </View>
 
                   <TouchableOpacity
                     onPress={handleLogout}

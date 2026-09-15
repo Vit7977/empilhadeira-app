@@ -340,7 +340,7 @@ export default function Dashboard({ route }) {
                 EIXO X
               </Text>
 
-              <Text variant="headlineSmall">{empilhadeira.posicaoX} m</Text>
+              <Text variant="headlineSmall">{empilhadeira.posicaoX.toFixed(2)} m</Text>
             </View>
 
             <View style={styles.positionItem}>
@@ -353,7 +353,7 @@ export default function Dashboard({ route }) {
                 EIXO Y
               </Text>
 
-              <Text variant="headlineSmall">{empilhadeira.posicaoY} m</Text>
+              <Text variant="headlineSmall">{empilhadeira.posicaoY.toFixed(2)} m</Text>
             </View>
           </View>
         </Card.Content>
