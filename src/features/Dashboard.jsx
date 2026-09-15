@@ -49,17 +49,17 @@ export default function Dashboard({ route }) {
     status: selectedEmpilhadeira?.status,
 
     bateria:
-      telemetria?.nivel_bateria != null ? Number(telemetria.nivel_bateria) : 82,
+      telemetria?.nivel_bateria != null ? Number(telemetria.nivel_bateria) : 0,
     velocidade:
-      telemetria?.velocidade != null ? parseFloat(telemetria.velocidade) : 12.5,
+      telemetria?.velocidade != null ? parseFloat(telemetria.velocidade) : 0,
     pesoCarga:
-      telemetria?.peso_carga != null ? parseFloat(telemetria.peso_carga) : 850,
+      telemetria?.peso_carga != null ? parseFloat(telemetria.peso_carga) : 0,
     temperatura:
-      telemetria?.temperatura != null ? parseFloat(telemetria.temperatura) : 32,
+      telemetria?.temperatura != null ? parseFloat(telemetria.temperatura) : 0,
     posicaoX:
-      telemetria?.posicao_x != null ? Number(telemetria.posicao_x) : 14.5,
+      telemetria?.posicao_x != null ? Number(telemetria.posicao_x) : 0,
     posicaoY:
-      telemetria?.posicao_y != null ? Number(telemetria.posicao_y) : 8.2,
+      telemetria?.posicao_y != null ? Number(telemetria.posicao_y) : 0,
     obstaculo:
       telemetria?.obstaculo != null
         ? Boolean(Number(telemetria.obstaculo))
@@ -73,6 +73,13 @@ export default function Dashboard({ route }) {
   const horaFormatada = empilhadeira.dataHora
     ? new Date(empilhadeira.dataHora).toLocaleTimeString("pt-BR")
     : null;
+
+  const bateriaColor =
+    empilhadeira.bateria <= 15
+      ? "red"
+      : theme.dark
+        ? "lime"
+        : "#2E7D32";
 
   return (
     <ScrollView
@@ -192,7 +199,7 @@ export default function Dashboard({ route }) {
               Math.max((empilhadeira.bateria || 0) / 100, 0),
               1,
             )}
-            color={empilhadeira.bateria <= 15 ? "red" : "lime"}
+            color={bateriaColor}
             style={styles.progress}
           />
         </Card.Content>
@@ -340,7 +347,7 @@ export default function Dashboard({ route }) {
                 EIXO X
               </Text>
 
-              <Text variant="headlineSmall">{empilhadeira.posicaoX.toFixed(2)} m</Text>
+              <Text variant="headlineSmall">{empilhadeira.posicaoX.toFixed(2)}</Text>
             </View>
 
             <View style={styles.positionItem}>
@@ -353,7 +360,7 @@ export default function Dashboard({ route }) {
                 EIXO Y
               </Text>
 
-              <Text variant="headlineSmall">{empilhadeira.posicaoY.toFixed(2)} m</Text>
+              <Text variant="headlineSmall">{empilhadeira.posicaoY.toFixed(2)}</Text>
             </View>
           </View>
         </Card.Content>

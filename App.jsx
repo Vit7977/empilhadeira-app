@@ -107,17 +107,22 @@ export default function App() {
 
               switch (route.name) {
                 case "Dashboard":
-                  iconName = focused ? "grid" : "grid-outline";
+                  iconName = focused 
+                    ? "grid" 
+                    : "grid-outline";
                   break;
 
                 case "Login":
-                  iconName = focused ? "person" : "person-outline";
+                  iconName = focused 
+                    ? "person" 
+                    : "person-outline";
                   break;
 
                 case "Cadastro Funcionario":
                   iconName = focused
                     ? "person-add"
                     : "person-add-outline";
+                  break;
                     
                 case "Cadastro Usuário":
                   iconName = focused
@@ -179,7 +184,7 @@ export default function App() {
                     paddingHorizontal: 6,
                   }}
                 >
-                  <View style={{flex: 1, flexDirection: "column", alignItems: "center", maxWidth: "70%"}}>
+                  <View style={{flex: 1, flexDirection: "column", alignItems: "end", maxWidth: "70%", backgroundColor: "", marginRight: 6}}>
 
                   <Text
                     numberOfLines={1}
@@ -187,15 +192,14 @@ export default function App() {
                     style={{
                       color: theme.colors.onSurface,
                       fontSize: 16,
-                      marginRight: 8,
                       flexShrink: 1,
                     }}
                     >
                     {funcionario?.nome || usuario?.email}
                   </Text>
-                    <Text style={{color: "#00b7ffff", fontSize: 10, fontWeight: "bold"}}>
-                      {usuario?.nivel_acesso.toUpperCase()}
-                    </Text>
+                  <Text style={{color: usuario?.nivel_acesso === "admin" ? "#006eff" : usuario?.nivel_acesso === "supervisor" ? "#9350ff" : theme.colors.onSurface, fontSize: 10, fontWeight: "bold"}}>
+                    {usuario?.nivel_acesso.toUpperCase()}
+                  </Text>
                   </View>
 
                   <TouchableOpacity

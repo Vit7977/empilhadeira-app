@@ -9,6 +9,7 @@ import {
   Menu,
   useTheme,
 } from "react-native-paper";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { useCadastro } from "../hooks/useCadastro";
 import { useFuncionario } from "../../Funcionario/hooks/useFuncionario";
@@ -20,7 +21,14 @@ export default function CadastroUsuario() {
   // FUNCIONÁRIOS
   // ==========================================
 
-  const { funcionarios } = useFuncionario();
+  const { funcionarios, refreshFuncionarios } = useFuncionario();
+
+  useFocusEffect(
+    () => {
+      refreshFuncionarios();
+    },
+    [refreshFuncionarios]
+  );
 
   const [menuFuncionario, setMenuFuncionario] =
     useState(false);
