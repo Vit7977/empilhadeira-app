@@ -23,6 +23,8 @@ import Login from "./src/features/Usuario/screens/Login";
 import CadastroUsuario from "./src/features/Usuario/screens/CadastroUsuario";
 import CadastroFuncionario from "./src/features/Funcionario/screens/CadastroFuncionario";
 import Dashboard from "./src/features/Dashboard";
+import Consulta from "./src/features/Consulta/screens/Consulta";
+import CadastroEmpilhadeira from "./src/features/Empilhadeira/screens/CadastroEmpilhadeira.jsx";
 
 const Tab = createBottomTabNavigator();
 
@@ -130,6 +132,18 @@ export default function App() {
                     : "person-add-outline";
                   break;
 
+                case "Cadastro Empilhadeira":
+                  iconName = focused
+                    ? "construct"
+                    : "construct-outline";
+                  break;
+
+                case "Consulta":
+                  iconName = focused
+                    ? "search"
+                    : "search-outline";
+                  break;
+
                 default:
                   iconName = "home-outline";
               }
@@ -179,12 +193,11 @@ export default function App() {
                     flexDirection: "row",
                     alignItems: "center",
                     marginRight: 10,
-                    maxWidth: "95%",
+                    maxWidth: "100%",
                     overflow: "hidden",
-                    paddingHorizontal: 6,
                   }}
                 >
-                  <View style={{flex: 1, flexDirection: "column", alignItems: "end", maxWidth: "70%", backgroundColor: "", marginRight: 6}}>
+                  <View style={{flex: 1, flexDirection: "column", alignItems: "end", maxWidth: "90%", backgroundColor: "", marginRight: 6}}>
 
                   <Text
                     numberOfLines={1}
@@ -209,6 +222,7 @@ export default function App() {
                       justifyContent: "center",
                       alignItems: "center",
                       padding: 4,
+                      marginLeft: 4,
                     }}
                   >
                     <Icon
@@ -290,6 +304,21 @@ export default function App() {
                 <Tab.Screen
                   name="Cadastro Funcionario"
                   component={CadastroFuncionario}
+                />
+              )}
+
+              {isAdmin && (
+                <Tab.Screen
+                  name="Cadastro Empilhadeira"
+                  component={CadastroEmpilhadeira}
+                />
+              )}
+
+              {/* Consulta aparece somente para ADMIN */}
+              {isAdmin && (
+                <Tab.Screen
+                  name="Consulta"
+                  component={Consulta}
                 />
               )}
             </>
