@@ -46,6 +46,17 @@ export function useLogin({ onLoginSuccess } = {}) {
         nome: credenciais.email.split("@")[0],
       };
 
+      if (dadosUsuario.ativo === false) {
+        const message = "Seu usuário está inativo. Procure um administrador.";
+        setLoginError(message);
+        Toast.show({
+          type: "error",
+          text1: "Acesso bloqueado",
+          text2: message,
+        });
+        return;
+      }
+
       saveStoredUser(dadosUsuario);
 
       Toast.show({

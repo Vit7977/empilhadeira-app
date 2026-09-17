@@ -19,6 +19,8 @@ import {
   removeStoredUser,
 } from "./src/features/Usuario/usuario.storage";
 
+import { getUsuarios } from "./src/features/Consulta/consulta.service.js";
+
 import Login from "./src/features/Usuario/screens/Login";
 import CadastroUsuario from "./src/features/Usuario/screens/CadastroUsuario";
 import CadastroFuncionario from "./src/features/Funcionario/screens/CadastroFuncionario";
@@ -66,6 +68,36 @@ export default function App() {
     setUsuario(dadosUsuario);
     setIsLogged(true);
   };
+
+  // Verifica periodicamente se o usuário logado continua ativo
+  useEffect(() => {
+    if (!isLogged || !usuario) return;
+
+    const verificarUsuarioAtivo = async () => {
+      try {
+        const usuarios = await getUsuarios();
+        const usuarioAtual = usuarios.find(
+          (u) => String(u.id) === String(usuario.id)
+        );
+
+        if (!usuarioAtual || usuarioAtual.ativo === false) {
+          Toast.show({
+            type: "error",
+            text1: "Acesso bloqueado",
+            text2: "Seu usuário foi desativado.",
+          });
+          handleLogout();
+        }
+      } catch {
+        // Falha ao consultar a API não deve deslogar o usuário
+      }
+    };
+
+    verificarUsuarioAtivo();
+    const intervalId = setInterval(verificarUsuarioAtivo, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [isLogged, usuario?.id]);
 
   // Verifica se é administrador
   const isAdmin =
