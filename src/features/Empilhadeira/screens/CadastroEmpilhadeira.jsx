@@ -10,7 +10,7 @@ import {
 } from "react-native-paper";
 import { useCadastro } from "../hooks/useCadastro.js";
 
-export default function CadastroEmpilhadeira({ navigation }) {
+export default function CadastroEmpilhadeira({ navigation, onCadastrado }) {
   const theme = useTheme();
 
   const {
@@ -22,7 +22,7 @@ export default function CadastroEmpilhadeira({ navigation }) {
     codigoInvalido,
     formularioInvalido,
     handleCadastro,
-  } = useCadastro({ navigation });
+  } = useCadastro({ navigation, onCadastrado });
 
   const [inputFocus, setInputFocus] = useState({
     input: "",

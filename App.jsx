@@ -20,6 +20,7 @@ import {
 } from "./src/features/Usuario/usuario.storage";
 
 import { getUsuarios } from "./src/features/Consulta/consulta.service.js";
+import { getEmpilhadeiras } from "./src/features/Empilhadeira/empilhadeira.service.js";
 
 import Login from "./src/features/Usuario/screens/Login";
 import CadastroUsuario from "./src/features/Usuario/screens/CadastroUsuario";
@@ -27,6 +28,7 @@ import CadastroFuncionario from "./src/features/Funcionario/screens/CadastroFunc
 import Dashboard from "./src/features/Dashboard";
 import Consulta from "./src/features/Consulta/screens/Consulta";
 import CadastroEmpilhadeira from "./src/features/Empilhadeira/screens/CadastroEmpilhadeira.jsx";
+import Joystick from "./src/features/Joystick/screens/Joystick.jsx";
 
 const Tab = createBottomTabNavigator();
 
@@ -98,6 +100,29 @@ export default function App() {
 
     return () => clearInterval(intervalId);
   }, [isLogged, usuario?.id]);
+
+  // Só pode existir uma empilhadeira cadastrada.
+  // null = ainda não verificado (aba de cadastro fica oculta até saber)
+  const [temEmpilhadeira, setTemEmpilhadeira] = useState(null);
+
+  const verificarEmpilhadeira = async () => {
+    try {
+      const response = await getEmpilhadeiras();
+      const lista = Array.isArray(response?.data) ? response.data : [];
+      setTemEmpilhadeira(lista.length > 0);
+    } catch {
+      // Falha na API: mantém o estado atual
+    }
+  };
+
+  useEffect(() => {
+    if (!isLogged) {
+      setTemEmpilhadeira(null);
+      return;
+    }
+
+    verificarEmpilhadeira();
+  }, [isLogged]);
 
   // Verifica se é administrador
   const isAdmin =
@@ -174,6 +199,12 @@ export default function App() {
                   iconName = focused
                     ? "search"
                     : "search-outline";
+                  break;
+
+                case "Joystick":
+                  iconName = focused
+                    ? "game-controller"
+                    : "game-controller-outline";
                   break;
 
                 default:
@@ -324,6 +355,19 @@ export default function App() {
                 component={Dashboard}
               />
 
+              {/* Joystick aparece para todos, se houver empilhadeira cadastrada */}
+              {temEmpilhadeira === true && (
+                <Tab.Screen
+                  name="Joystick"
+                  component={Joystick}
+                  options={{
+                    // Tela cheia: sem menu superior e inferior
+                    headerShown: false,
+                    tabBarStyle: { display: "none" },
+                  }}
+                />
+              )}
+
               {/* Cadastro aparece somente para ADMIN */}
               {isAdmin && (
                 <Tab.Screen
@@ -339,19 +383,28 @@ export default function App() {
                 />
               )}
 
-              {isAdmin && (
-                <Tab.Screen
-                  name="Cadastro Empilhadeira"
-                  component={CadastroEmpilhadeira}
-                />
+              {/* Cadastro de empilhadeira só aparece se não houver nenhuma cadastrada */}
+              {isAdmin && temEmpilhadeira === false && (
+                <Tab.Screen name="Cadastro Empilhadeira">
+                  {(props) => (
+                    <CadastroEmpilhadeira
+                      {...props}
+                      onCadastrado={verificarEmpilhadeira}
+                    />
+                  )}
+                </Tab.Screen>
               )}
 
               {/* Consulta aparece somente para ADMIN */}
               {isAdmin && (
-                <Tab.Screen
-                  name="Consulta"
-                  component={Consulta}
-                />
+                <Tab.Screen name="Consulta">
+                  {(props) => (
+                    <Consulta
+                      {...props}
+                      onEmpilhadeiraExcluida={verificarEmpilhadeira}
+                    />
+                  )}
+                </Tab.Screen>
               )}
             </>
           )}

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import Toast from "react-native-toast-message";
-import { createEmpilhadeira } from "../empilhadeira.service.js";
+import { createEmpilhadeira, getEmpilhadeiras } from "../empilhadeira.service.js";
 
-export function useCadastro({ navigation } = {}) {
+export function useCadastro({ navigation, onCadastrado } = {}) {
   const [codigo, setCodigo] = useState("");
   const [status, setStatus] = useState("disponivel");
   const [loading, setLoading] = useState(false);
@@ -40,6 +40,18 @@ export function useCadastro({ navigation } = {}) {
     };
 
     try {
+      // Só pode existir uma empilhadeira cadastrada
+      const existentes = await getEmpilhadeiras();
+      if (Array.isArray(existentes?.data) && existentes.data.length > 0) {
+        Toast.show({
+          type: "info",
+          text1: "Aviso",
+          text2: "Já existe uma empilhadeira cadastrada.",
+        });
+        onCadastrado?.();
+        return;
+      }
+
       const response = await createEmpilhadeira(empilhadeira);
 
       Toast.show({
@@ -52,9 +64,10 @@ export function useCadastro({ navigation } = {}) {
       setCodigo("");
       setStatus("disponivel");
 
-      // Volta para o Dashboard
+      // Volta para o Dashboard e oculta a aba de cadastro
       setTimeout(() => {
         navigation?.navigate?.("Dashboard");
+        onCadastrado?.();
       }, 1200);
     } catch (error) {
       console.error("Erro ao cadastrar empilhadeira:", error);

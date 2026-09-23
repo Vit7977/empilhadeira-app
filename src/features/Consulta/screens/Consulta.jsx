@@ -38,7 +38,7 @@ import {
   deleteEmpilhadeira,
 } from "../consulta.service.js";
 
-export default function Consulta() {
+export default function Consulta({ onEmpilhadeiraExcluida }) {
   const theme = useTheme();
 
   // Verificação de permissão de Administrador
@@ -149,6 +149,11 @@ export default function Consulta() {
 
       setItemParaExcluir(null);
       refresh();
+
+      // Libera novamente a aba de cadastro de empilhadeira
+      if (tipo === "empilhadeiras") {
+        onEmpilhadeiraExcluida?.();
+      }
     } catch (err) {
       console.error("Erro ao excluir:", err);
       const msg =

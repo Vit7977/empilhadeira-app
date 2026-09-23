@@ -15,16 +15,24 @@ import useTelemetria from "./Telemetria/useTelemetria";
 export default function Dashboard({ route }) {
   const theme = useTheme();
 
-  const empilhadeiraId = route?.params?.id || 0;
+  const routeId = route?.params?.id ?? null;
 
   const {
-    selectedEmpilhadeira,
+    empilhadeiras,
+    selectedEmpilhadeira: empilhadeiraPorId,
     loading: loadingEmpilhadeira,
     refreshing: refreshingEmpilhadeira,
     refresh: refreshEmpilhadeira,
   } = useEmpilhadeira({
-    id: empilhadeiraId,
+    id: routeId,
   });
+
+  // Sem id na rota (aba Dashboard), o hook busca a lista: usa a primeira empilhadeira
+  const selectedEmpilhadeira = routeId
+    ? empilhadeiraPorId
+    : empilhadeiras[0] ?? null;
+
+  const empilhadeiraId = selectedEmpilhadeira?.id ?? routeId;
 
   const {
     telemetria,
