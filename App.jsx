@@ -46,9 +46,7 @@ export default function App() {
   useEffect(() => {
     setFuncionario(funcUser || null);
   }, [funcUser]);
-
-  // Recupera o usuário salvo
-  useEffect(() => {
+  -useEffect(() => {
     const usuarioSalvo = getStoredUser();
 
     if (usuarioSalvo) {
@@ -57,7 +55,6 @@ export default function App() {
     }
   }, []);
 
-  // Logout
   const handleLogout = () => {
     removeStoredUser();
 
@@ -65,13 +62,11 @@ export default function App() {
     setIsLogged(false);
   };
 
-  // Login realizado
   const handleLoginSuccess = (dadosUsuario) => {
     setUsuario(dadosUsuario);
     setIsLogged(true);
   };
 
-  // Verifica periodicamente se o usuário logado continua ativo
   useEffect(() => {
     if (!isLogged || !usuario) return;
 
@@ -79,7 +74,7 @@ export default function App() {
       try {
         const usuarios = await getUsuarios();
         const usuarioAtual = usuarios.find(
-          (u) => String(u.id) === String(usuario.id)
+          (u) => String(u.id) === String(usuario.id),
         );
 
         if (!usuarioAtual || usuarioAtual.ativo === false) {
@@ -90,9 +85,7 @@ export default function App() {
           });
           handleLogout();
         }
-      } catch {
-        // Falha ao consultar a API não deve deslogar o usuário
-      }
+      } catch {}
     };
 
     verificarUsuarioAtivo();
@@ -101,8 +94,6 @@ export default function App() {
     return () => clearInterval(intervalId);
   }, [isLogged, usuario?.id]);
 
-  // Só pode existir uma empilhadeira cadastrada.
-  // null = ainda não verificado (aba de cadastro fica oculta até saber)
   const [temEmpilhadeira, setTemEmpilhadeira] = useState(null);
 
   const verificarEmpilhadeira = async () => {
@@ -110,9 +101,7 @@ export default function App() {
       const response = await getEmpilhadeiras();
       const lista = Array.isArray(response?.data) ? response.data : [];
       setTemEmpilhadeira(lista.length > 0);
-    } catch {
-      // Falha na API: mantém o estado atual
-    }
+    } catch {}
   };
 
   useEffect(() => {
@@ -124,11 +113,8 @@ export default function App() {
     verificarEmpilhadeira();
   }, [isLogged]);
 
-  // Verifica se é administrador
-  const isAdmin =
-    usuario?.nivel_acesso?.trim().toLowerCase() === "admin";
+  const isAdmin = usuario?.nivel_acesso?.trim().toLowerCase() === "admin";
 
-  // Tema
   const theme =
     colorScheme === "dark"
       ? {
@@ -156,49 +142,32 @@ export default function App() {
       <NavigationContainer>
         <Tab.Navigator
           screenOptions={({ route }) => ({
-            /*
-             * ============================
-             * ÍCONES DAS ABAS
-             * ============================
-             */
             tabBarIcon: ({ focused }) => {
               let iconName;
 
               switch (route.name) {
                 case "Dashboard":
-                  iconName = focused 
-                    ? "grid" 
-                    : "grid-outline";
+                  iconName = focused ? "grid" : "grid-outline";
                   break;
 
                 case "Login":
-                  iconName = focused 
-                    ? "person" 
-                    : "person-outline";
+                  iconName = focused ? "person" : "person-outline";
                   break;
 
                 case "Cadastro Funcionario":
-                  iconName = focused
-                    ? "person-add"
-                    : "person-add-outline";
+                  iconName = focused ? "person-add" : "person-add-outline";
                   break;
-                    
+
                 case "Cadastro Usuário":
-                  iconName = focused
-                    ? "person-add"
-                    : "person-add-outline";
+                  iconName = focused ? "person-add" : "person-add-outline";
                   break;
 
                 case "Cadastro Empilhadeira":
-                  iconName = focused
-                    ? "construct"
-                    : "construct-outline";
+                  iconName = focused ? "construct" : "construct-outline";
                   break;
 
                 case "Consulta":
-                  iconName = focused
-                    ? "search"
-                    : "search-outline";
+                  iconName = focused ? "search" : "search-outline";
                   break;
 
                 case "Joystick":
@@ -224,11 +193,6 @@ export default function App() {
               );
             },
 
-            /*
-             * ============================
-             * HEADER
-             * ============================
-             */
             headerShown: true,
 
             headerStyle: {
@@ -244,11 +208,6 @@ export default function App() {
               color: theme.colors.onSurface,
             },
 
-            /*
-             * ============================
-             * USUÁRIO + LOGOUT
-             * ============================
-             */
             headerRight: () =>
               isLogged ? (
                 <View
@@ -260,22 +219,41 @@ export default function App() {
                     overflow: "hidden",
                   }}
                 >
-                  <View style={{flex: 1, flexDirection: "column", alignItems: "end", maxWidth: "90%", backgroundColor: "", marginRight: 6}}>
-
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
+                  <View
                     style={{
-                      color: theme.colors.onSurface,
-                      fontSize: 16,
-                      flexShrink: 1,
+                      flex: 1,
+                      flexDirection: "column",
+                      alignItems: "end",
+                      maxWidth: "90%",
+                      backgroundColor: "",
+                      marginRight: 6,
                     }}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      style={{
+                        color: theme.colors.onSurface,
+                        fontSize: 16,
+                        flexShrink: 1,
+                      }}
                     >
-                    {funcionario?.nome || usuario?.email}
-                  </Text>
-                  <Text style={{color: usuario?.nivel_acesso === "admin" ? "#006eff" : usuario?.nivel_acesso === "supervisor" ? "#9350ff" : theme.colors.onSurface, fontSize: 10, fontWeight: "bold"}}>
-                    {usuario?.nivel_acesso.toUpperCase()}
-                  </Text>
+                      {funcionario?.nome || usuario?.email}
+                    </Text>
+                    <Text
+                      style={{
+                        color:
+                          usuario?.nivel_acesso === "admin"
+                            ? "#006eff"
+                            : usuario?.nivel_acesso === "supervisor"
+                              ? "#9350ff"
+                              : theme.colors.onSurface,
+                        fontSize: 10,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {usuario?.nivel_acesso.toUpperCase()}
+                    </Text>
                   </View>
 
                   <TouchableOpacity
@@ -297,11 +275,6 @@ export default function App() {
                 </View>
               ) : null,
 
-            /*
-             * ============================
-             * BARRA INFERIOR
-             * ============================
-             */
             tabBarStyle: {
               backgroundColor: theme.colors.surface,
               height: 65,
@@ -311,64 +284,39 @@ export default function App() {
               elevation: 0,
             },
 
-            /*
-             * COR DO ÍCONE/TEXTO ATIVO
-             */
             tabBarActiveTintColor: theme.colors.primary,
 
-            /*
-             * COR DO ÍCONE/TEXTO INATIVO
-             */
             tabBarInactiveTintColor: "#777777",
 
-            /*
-             * TEXTO DAS ABAS
-             */
             tabBarLabelStyle: {
               fontSize: 10,
               fontWeight: "600",
             },
           })}
         >
-          {/* ============================
-              LOGIN
-          ============================ */}
           {!isLogged && (
             <Tab.Screen name="Login">
               {(props) => (
-                <Login
-                  {...props}
-                  onLoginSuccess={handleLoginSuccess}
-                />
+                <Login {...props} onLoginSuccess={handleLoginSuccess} />
               )}
             </Tab.Screen>
           )}
 
-          {/* ============================
-              USUÁRIO LOGADO
-          ============================ */}
           {isLogged && (
             <>
-              {/* Dashboard aparece para todos */}
-              <Tab.Screen
-                name="Dashboard"
-                component={Dashboard}
-              />
+              <Tab.Screen name="Dashboard" component={Dashboard} />
 
-              {/* Joystick aparece para todos, se houver empilhadeira cadastrada */}
               {temEmpilhadeira === true && (
                 <Tab.Screen
                   name="Joystick"
                   component={Joystick}
                   options={{
-                    // Tela cheia: sem menu superior e inferior
                     headerShown: false,
                     tabBarStyle: { display: "none" },
                   }}
                 />
               )}
 
-              {/* Cadastro aparece somente para ADMIN */}
               {isAdmin && (
                 <Tab.Screen
                   name="Cadastro Usuário"
@@ -383,7 +331,6 @@ export default function App() {
                 />
               )}
 
-              {/* Cadastro de empilhadeira só aparece se não houver nenhuma cadastrada */}
               {isAdmin && temEmpilhadeira === false && (
                 <Tab.Screen name="Cadastro Empilhadeira">
                   {(props) => (
@@ -395,7 +342,6 @@ export default function App() {
                 </Tab.Screen>
               )}
 
-              {/* Consulta aparece somente para ADMIN */}
               {isAdmin && (
                 <Tab.Screen name="Consulta">
                   {(props) => (

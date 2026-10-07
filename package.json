@@ -22,7 +22,7 @@
     "start": "npm i && expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "npm i && expo start --web"
   },
   "private": true
 }
