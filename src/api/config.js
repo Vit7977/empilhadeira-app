@@ -1,5 +1,5 @@
 export const apiConfig = {
-    url: "http://localhost:3000",
+    url: "http://api-empilhadeira.onrender.com",
     headers: {
         "Content-Type": "application/json",
     },
