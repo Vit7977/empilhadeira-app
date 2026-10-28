@@ -8,18 +8,49 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useIsFocused } from "@react-navigation/native";
+import {
+  getManager,
+  pedirPermissoes,
+  conectarEmpilhadeira,
+  enviarComando,
+} from "../joystick.ble.js";
 
 const CORES = {
   fundo: "#000000",
   base: "#b3b3b3",
   borda: "#a3a3a3",
   manopla: "#a6a6a6",
+  parar: "#d32f2f",
 };
+
+// Texto e cor de cada estado da conexão Bluetooth
+const CONEXAO = {
+  procurando: { texto: "Procurando a empilhadeira...", cor: "#f5b700" },
+  conectado: { texto: "Conectado via Bluetooth", cor: "#22c55e" },
+  desconectado: {
+    texto: "Empilhadeira não encontrada — tentando de novo...",
+    cor: "#ef4444",
+  },
+  "bluetooth-desligado": { texto: "Ligue o Bluetooth do celular", cor: "#ef4444" },
+  "sem-permissao": {
+    texto: "Permita o Bluetooth nas configurações do app",
+    cor: "#ef4444",
+  },
+  indisponivel: {
+    texto: "Bluetooth indisponível — use o app instalado (APK), não o Expo Go",
+    cor: "#ef4444",
+  },
+};
+
+// O ESP32 para os motores se ficar 500 ms sem receber comando
+const INTERVALO_ENVIO_MS = 100;
 
 const limitar = (valor, min, max) => Math.min(Math.max(valor, min), max);
 
 export default function Joystick({ navigation }) {
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
 
   // Os controles só aparecem com o celular na horizontal
   const janela = useWindowDimensions();
@@ -31,6 +62,14 @@ export default function Joystick({ navigation }) {
   // elevacao: 0 (embaixo) a 1 (em cima) — mantém a posição ao soltar
   const [direcao, setDirecao] = useState({ x: 0, y: 0 });
   const [elevacao, setElevacao] = useState(0);
+
+  // Último comando, lido pelo envio periódico sem recriar a conexão
+  const comandoRef = useRef({ direcao, elevacao });
+  comandoRef.current = { direcao, elevacao };
+
+  const dispositivoRef = useRef(null); // id do ESP32 conectado
+  const enviandoRef = useRef(false); // evita acumular envios se o Bluetooth atrasar
+  const [conexao, setConexao] = useState("procurando");
 
   const joystickRef = useRef(null);
   const sliderRef = useRef(null);
@@ -121,6 +160,124 @@ export default function Joystick({ navigation }) {
     setDirecao({ x: 0, y: 0 });
   };
 
+  /*
+   * ============================
+   * COMUNICAÇÃO COM O ESP32 (BLUETOOTH)
+   * ============================
+   * Envia "x,y,elevacao" (x/y de -100 a 100, elevação de 0 a 100).
+   * O firmware lê os dois primeiros valores; a elevação fica pronta para quando houver motor de garfo.
+   */
+  const formatarComando = (x, y, e) =>
+    `${Math.round(x * 100)},${Math.round(y * 100)},${Math.round(e * 100)}`;
+
+  const enviar = (x, y, e) => {
+    const ble = getManager();
+    const id = dispositivoRef.current;
+    if (!ble || !id || enviandoRef.current) return;
+
+    enviandoRef.current = true;
+    enviarComando(ble, id, formatarComando(x, y, e))
+      .catch(() => {})
+      .finally(() => {
+        enviandoRef.current = false;
+      });
+  };
+
+  // O próximo envio periódico (até 100 ms) já leva o comando de parada
+  const parar = () => soltarTudo();
+
+  // Só fica conectado enquanto a tela do Joystick estiver aberta
+  useEffect(() => {
+    if (!isFocused) return;
+
+    const ble = getManager();
+    if (!ble) {
+      setConexao("indisponivel");
+      return;
+    }
+
+    let ativo = true;
+    let timer = null;
+    let assinaturaDesconexao = null;
+
+    const tentarDeNovo = (estado, espera) => {
+      if (!ativo) return;
+      setConexao(estado);
+      timer = setTimeout(conectar, espera);
+    };
+
+    const conectar = async () => {
+      if (!ativo) return;
+
+      try {
+        if (!(await pedirPermissoes())) {
+          setConexao("sem-permissao");
+          return;
+        }
+
+        const estado = await ble.state();
+        if (estado === "Unauthorized") {
+          setConexao("sem-permissao");
+          return;
+        }
+        if (estado !== "PoweredOn") {
+          // "Unknown"/"Resetting" acontecem por instantes ao abrir o app
+          tentarDeNovo(
+            estado === "PoweredOff" ? "bluetooth-desligado" : "procurando",
+            1000,
+          );
+          return;
+        }
+
+        setConexao("procurando");
+        const id = await conectarEmpilhadeira(ble);
+
+        if (!ativo) {
+          ble.cancelDeviceConnection(id).catch(() => {});
+          return;
+        }
+
+        dispositivoRef.current = id;
+        setConexao("conectado");
+
+        assinaturaDesconexao = ble.onDeviceDisconnected(id, () => {
+          assinaturaDesconexao?.remove();
+          dispositivoRef.current = null;
+          soltarTudo();
+          tentarDeNovo("desconectado", 1000);
+        });
+      } catch {
+        tentarDeNovo("desconectado", 2000);
+      }
+    };
+
+    conectar();
+
+    const envioTimer = setInterval(() => {
+      const { direcao: d, elevacao: e } = comandoRef.current;
+      enviar(d.x, d.y, e);
+    }, INTERVALO_ENVIO_MS);
+
+    return () => {
+      ativo = false;
+      clearInterval(envioTimer);
+      clearTimeout(timer);
+      assinaturaDesconexao?.remove();
+      ble.stopDeviceScan();
+
+      // Manda parar os motores e só então desconecta
+      const id = dispositivoRef.current;
+      dispositivoRef.current = null;
+      if (id) {
+        enviarComando(ble, id, formatarComando(0, 0, comandoRef.current.elevacao))
+          .catch(() => {})
+          .finally(() => ble.cancelDeviceConnection(id).catch(() => {}));
+      }
+
+      soltarTudo();
+    };
+  }, [isFocused]);
+
   // Ao virar para a vertical os controles somem: solta o que estiver pressionado
   useEffect(() => {
     if (vertical) soltarTudo();
@@ -176,6 +333,46 @@ export default function Joystick({ navigation }) {
         ]}
       >
         <Ionicons name="arrow-back" size={28} color={CORES.base} />
+      </TouchableOpacity>
+
+      {/* ============================
+          STATUS DA CONEXÃO
+      ============================ */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.status,
+          {
+            top: insets.top + 18,
+            left: insets.left + 64,
+            right: insets.right + 140,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.statusPonto,
+            { backgroundColor: CONEXAO[conexao].cor },
+          ]}
+        />
+        <Text style={styles.statusTexto} numberOfLines={1}>
+          {CONEXAO[conexao].texto}
+        </Text>
+      </View>
+
+      {/* ============================
+          PARADA DE EMERGÊNCIA
+      ============================ */}
+      <TouchableOpacity
+        onPress={parar}
+        activeOpacity={0.7}
+        style={[
+          styles.parar,
+          { top: insets.top + 12, right: insets.right + 12 },
+        ]}
+      >
+        <Ionicons name="stop" size={18} color="#ffffff" />
+        <Text style={styles.pararTexto}>PARAR</Text>
       </TouchableOpacity>
 
       {/* ============================
@@ -292,6 +489,44 @@ const styles = StyleSheet.create({
     position: "absolute",
     zIndex: 1,
     padding: 8,
+  },
+
+  status: {
+    position: "absolute",
+    zIndex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  statusPonto: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+
+  statusTexto: {
+    color: CORES.base,
+    fontSize: 14,
+    flexShrink: 1,
+  },
+
+  parar: {
+    position: "absolute",
+    zIndex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: CORES.parar,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+  },
+
+  pararTexto: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 
   aviso: {
