@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { useState, useCallback } from "react";
+import { StyleSheet, View, ScrollView } from "react-native";
 import {
   Text,
   TextInput,
@@ -24,10 +24,9 @@ export default function CadastroUsuario() {
   const { funcionarios, refreshFuncionarios } = useFuncionario();
 
   useFocusEffect(
-    () => {
+    useCallback(() => {
       refreshFuncionarios();
-    },
-    [refreshFuncionarios]
+    }, [refreshFuncionarios])
   );
 
   const [menuFuncionario, setMenuFuncionario] =
@@ -50,9 +49,10 @@ export default function CadastroUsuario() {
     nivelAcesso,
     setNivelAcesso,
 
+    mostrarSenha,
+    toggleMostrarSenha,
+
     loading,
-    erro,
-    sucesso,
 
     funcionarioInvalido,
     emailInvalido,
@@ -72,13 +72,6 @@ export default function CadastroUsuario() {
         String(item.id) ===
         String(funcionario)
     );
-
-  // ==========================================
-  // SENHA
-  // ==========================================
-
-  const [mostrarSenha, setMostrarSenha] =
-    useState(false);
 
   // ==========================================
   // FOCUS
@@ -105,14 +98,15 @@ export default function CadastroUsuario() {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor:
-            theme.colors.background,
-        },
-      ]}
+    <ScrollView
+      style={{
+        backgroundColor:
+          theme.colors.background,
+      }}
+      contentContainerStyle={
+        styles.container
+      }
+      keyboardShouldPersistTaps="handled"
     >
       {/* =========================
           FUNCIONÁRIO
@@ -403,11 +397,7 @@ export default function CadastroUsuario() {
                 ? "eye-off"
                 : "eye"
             }
-            onPress={() =>
-              setMostrarSenha(
-                (prev) => !prev
-              )
-            }
+            onPress={toggleMostrarSenha}
             color={
               theme.colors.onSurfaceVariant
             }
@@ -433,32 +423,6 @@ export default function CadastroUsuario() {
       </HelperText>
 
       {/* =========================
-          ERRO
-      ========================= */}
-
-      {erro ? (
-        <HelperText
-          type="error"
-          visible={true}
-        >
-          {erro}
-        </HelperText>
-      ) : null}
-
-      {/* =========================
-          SUCESSO
-      ========================= */}
-
-      {sucesso ? (
-        <HelperText
-          type="info"
-          visible={true}
-        >
-          {sucesso}
-        </HelperText>
-      ) : null}
-
-      {/* =========================
           BOTÃO CADASTRAR
       ========================= */}
 
@@ -480,13 +444,13 @@ export default function CadastroUsuario() {
       >
         Cadastrar
       </Button>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 25,
     paddingTop: 50,
     justifyContent: "center",

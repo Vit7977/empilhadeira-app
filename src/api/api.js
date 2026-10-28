@@ -3,5 +3,6 @@ import { apiConfig } from "./config.js"
 
 export const api = axios.create({
     baseURL: apiConfig.url + "/api",
+    timeout: apiConfig.timeout,
     headers: apiConfig.headers,
 })

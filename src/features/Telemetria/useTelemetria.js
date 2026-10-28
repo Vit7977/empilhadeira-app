@@ -22,18 +22,17 @@ function extrairUltimaTelemetria(resposta, empilhadeiraId) {
 
   if (!lista || lista.length === 0) return null;
 
-  // Filtra pela empilhadeira caso especificada
+  // Filtra pela empilhadeira caso especificada (sem cair nos dados de outra)
   if (empilhadeiraId != null) {
-    const filtrados = lista.filter(
+    lista = lista.filter(
       (item) => String(item.empilhadeira) === String(empilhadeiraId)
     );
-    if (filtrados.length > 0) {
-      lista = filtrados;
-    }
   }
 
+  if (lista.length === 0) return null;
+
   // Ordena decrescente pela data_hora mais recente ou pelo maior ID
-  lista.sort((a, b) => {
+  lista = [...lista].sort((a, b) => {
     if (a.data_hora && b.data_hora) {
       return new Date(b.data_hora).getTime() - new Date(a.data_hora).getTime();
     }
@@ -69,8 +68,17 @@ export function useTelemetria({
   const telemetriaRef = useRef(telemetria);
   telemetriaRef.current = telemetria;
 
+  // Evita disparar uma nova busca enquanto a anterior não terminou (API lenta)
+  const buscandoRef = useRef(false);
+
   const buscarTelemetria = useCallback(
     async (isBackground = false) => {
+      // Sem empilhadeira definida ainda (ex.: lista carregando), não busca
+      if (empilhadeiraId == null) return null;
+      if (isBackground && buscandoRef.current) return null;
+
+      buscandoRef.current = true;
+
       if (!isBackground) {
         setLoading(true);
       }
@@ -118,6 +126,8 @@ export function useTelemetria({
 
         return null;
       } finally {
+        buscandoRef.current = false;
+
         if (!isBackground) {
           setLoading(false);
         }

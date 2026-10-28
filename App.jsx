@@ -15,7 +15,7 @@ import { useState, useEffect } from "react";
 import Toast from "react-native-toast-message";
 
 import {
-  getStoredUser,
+  loadStoredUser,
   removeStoredUser,
 } from "./src/features/Usuario/usuario.storage";
 
@@ -46,13 +46,17 @@ export default function App() {
   useEffect(() => {
     setFuncionario(funcUser || null);
   }, [funcUser]);
-  -useEffect(() => {
-    const usuarioSalvo = getStoredUser();
+  const [carregandoSessao, setCarregandoSessao] = useState(true);
 
-    if (usuarioSalvo) {
-      setUsuario(usuarioSalvo);
-      setIsLogged(true);
-    }
+  useEffect(() => {
+    loadStoredUser().then((usuarioSalvo) => {
+      if (usuarioSalvo) {
+        setUsuario(usuarioSalvo);
+        setIsLogged(true);
+      }
+
+      setCarregandoSessao(false);
+    });
   }, []);
 
   const handleLogout = () => {
@@ -135,7 +139,8 @@ export default function App() {
           },
         };
 
-  const isDark = colorScheme === "dark";
+  // Evita mostrar a tela de Login por um instante enquanto lê a sessão salva
+  if (carregandoSessao) return null;
 
   return (
     <PaperProvider theme={theme}>
@@ -223,9 +228,8 @@ export default function App() {
                     style={{
                       flex: 1,
                       flexDirection: "column",
-                      alignItems: "end",
+                      alignItems: "flex-end",
                       maxWidth: "90%",
-                      backgroundColor: "",
                       marginRight: 6,
                     }}
                   >
@@ -252,7 +256,7 @@ export default function App() {
                         fontWeight: "bold",
                       }}
                     >
-                      {usuario?.nivel_acesso.toUpperCase()}
+                      {usuario?.nivel_acesso?.toUpperCase()}
                     </Text>
                   </View>
 

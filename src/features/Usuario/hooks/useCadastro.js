@@ -1,9 +1,8 @@
 import { useState } from "react";
 import Toast from "react-native-toast-message";
 import { createUsuario } from "../usuario.service.js";
-import { saveStoredUser } from "../usuario.storage.js";
 
-export function useCadastro({ navigation } = {}) {
+export function useCadastro() {
   const [funcionario, setFuncionario] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -48,21 +47,17 @@ export function useCadastro({ navigation } = {}) {
     try {
       const response = await createUsuario(usuario);
 
-      saveStoredUser({
-        funcionario: usuario.funcionario,
-        email: usuario.email,
-        nivel_acesso: usuario.nivel_acesso,
-      });
-
       Toast.show({
         type: "success",
         text1: "Sucesso",
         text2: response?.message || "Usuário cadastrado com sucesso!",
       });
 
-      setTimeout(() => {
-        navigation?.navigate?.("Login");
-      }, 1200);
+      // Limpa o formulário
+      setFuncionario("");
+      setEmail("");
+      setSenha("");
+      setNivelAcesso("operador");
     } catch (error) {
       let title = "Erro no Cadastro";
       let message = "Não foi possível conectar ou processar a solicitação.";

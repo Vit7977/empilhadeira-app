@@ -9,11 +9,13 @@ import {
   Divider,
   useTheme,
 } from "react-native-paper";
+import { useIsFocused } from "@react-navigation/native";
 import useEmpilhadeira from "./Empilhadeira/useEmpilhadeira";
 import useTelemetria from "./Telemetria/useTelemetria";
 
 export default function Dashboard({ route }) {
   const theme = useTheme();
+  const isFocused = useIsFocused();
 
   const routeId = route?.params?.id ?? null;
 
@@ -42,7 +44,8 @@ export default function Dashboard({ route }) {
     error: erroTelemetria,
   } = useTelemetria({
     empilhadeiraId,
-    pollingInterval: 3000,
+    // Só atualiza em tempo real enquanto o Dashboard estiver aberto
+    pollingInterval: isFocused ? 3000 : 0,
   });
 
   const loading = loadingEmpilhadeira;
@@ -78,12 +81,17 @@ export default function Dashboard({ route }) {
     ...selectedEmpilhadeira,
   };
 
+  // Enquanto não chega nenhuma telemetria, mostra "—" em vez de valores zerados
+  const semDados = !telemetria;
+  const exibir = (valor) => (semDados ? "—" : valor);
+  const bateriaBaixa = !semDados && empilhadeira.bateria <= 15;
+
   const horaFormatada = empilhadeira.dataHora
     ? new Date(empilhadeira.dataHora).toLocaleTimeString("pt-BR")
     : null;
 
   const bateriaColor =
-    empilhadeira.bateria <= 15
+    bateriaBaixa
       ? "red"
       : theme.dark
         ? "lime"
@@ -184,7 +192,7 @@ export default function Dashboard({ route }) {
         <Card.Content>
           <View style={styles.cardHeader}>
             <View style={styles.cardTitle}>
-              {empilhadeira.bateria <= 15 ? (
+              {bateriaBaixa ? (
                 <Icon
                   source="battery-low"
                   size={24}
@@ -197,8 +205,13 @@ export default function Dashboard({ route }) {
               <Text variant="titleMedium">Bateria</Text>
             </View>
 
-            <Text variant="titleLarge" style={{ color: theme.colors.primary }}>
-              {empilhadeira.bateria}%
+            <Text
+              variant="titleLarge"
+              style={{
+                color: bateriaBaixa ? theme.colors.error : theme.colors.primary,
+              }}
+            >
+              {exibir(`${empilhadeira.bateria}%`)}
             </Text>
           </View>
 
@@ -228,7 +241,7 @@ export default function Dashboard({ route }) {
             <Icon source="speedometer" size={28} color={theme.colors.primary} />
 
             <Text variant="headlineSmall" style={styles.statValue}>
-              {empilhadeira.velocidade}
+              {exibir(empilhadeira.velocidade)}
             </Text>
 
             <Text
@@ -255,7 +268,7 @@ export default function Dashboard({ route }) {
             />
 
             <Text variant="headlineSmall" style={styles.statValue}>
-              {empilhadeira.pesoCarga}
+              {exibir(empilhadeira.pesoCarga)}
             </Text>
 
             <Text
@@ -278,7 +291,7 @@ export default function Dashboard({ route }) {
             <Icon source="thermometer" size={28} color={theme.colors.primary} />
 
             <Text variant="headlineSmall" style={styles.statValue}>
-              {empilhadeira.temperatura}°C
+              {exibir(`${empilhadeira.temperatura}°C`)}
             </Text>
 
             <Text variant="labelMedium">Temperatura</Text>
@@ -312,7 +325,7 @@ export default function Dashboard({ route }) {
                 },
               ]}
             >
-              {empilhadeira.obstaculo ? "Detectado" : "Livre"}
+              {exibir(empilhadeira.obstaculo ? "Detectado" : "Livre")}
             </Text>
 
             <Text variant="labelMedium">Obstáculo</Text>
@@ -355,7 +368,7 @@ export default function Dashboard({ route }) {
                 EIXO X
               </Text>
 
-              <Text variant="headlineSmall">{empilhadeira.posicaoX.toFixed(2)}</Text>
+              <Text variant="headlineSmall">{exibir(empilhadeira.posicaoX.toFixed(2))}</Text>
             </View>
 
             <View style={styles.positionItem}>
@@ -368,7 +381,7 @@ export default function Dashboard({ route }) {
                 EIXO Y
               </Text>
 
-              <Text variant="headlineSmall">{empilhadeira.posicaoY.toFixed(2)}</Text>
+              <Text variant="headlineSmall">{exibir(empilhadeira.posicaoY.toFixed(2))}</Text>
             </View>
           </View>
         </Card.Content>

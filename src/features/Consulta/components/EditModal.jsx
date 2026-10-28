@@ -28,6 +28,8 @@ export default function EditModal({
   const [userNivel, setUserNivel] = useState("operador");
   const [userAtivo, setUserAtivo] = useState(true);
   const [userSenha, setUserSenha] = useState("");
+  // Mesma regra do cadastro e do login: mínimo de 8 caracteres
+  const senhaInvalida = userSenha.length > 0 && userSenha.length < 8;
 
   // Estados para Funcionário
   const [funcNome, setFuncNome] = useState("");
@@ -145,12 +147,12 @@ export default function EditModal({
 
       if (tipo === "usuarios") {
         payload = {
-          email: userEmail.trim(),
+          email: userEmail.trim().toLowerCase(),
           nivel_acesso: userNivel,
           ativo: userAtivo,
         };
-        if (userSenha && userSenha.trim().length >= 6) {
-          payload.senha = userSenha.trim();
+        if (userSenha) {
+          payload.senha = userSenha;
         }
       } else if (tipo === "funcionarios") {
         // Converte DD/MM/AAAA para AAAA-MM-DD se necessário
@@ -244,9 +246,9 @@ export default function EditModal({
                 mode="outlined"
                 style={styles.input}
               />
-              {userSenha.length > 0 && userSenha.length < 6 && (
+              {senhaInvalida && (
                 <HelperText type="error">
-                  A senha deve possuir pelo menos 6 caracteres.
+                  A senha deve possuir pelo menos 8 caracteres.
                 </HelperText>
               )}
 
@@ -427,7 +429,7 @@ export default function EditModal({
               mode="contained"
               onPress={handleSalvar}
               loading={loading}
-              disabled={loading}
+              disabled={loading || senhaInvalida}
               buttonColor={theme.colors.primary}
               style={styles.actionBtn}
             >

@@ -9,8 +9,6 @@ export function useFuncionario() {
     try {
       const data = await getFuncionarios();
 
-      console.log("Funcionários recebidos pela API:", data);
-
       if (Array.isArray(data)) {
         setFuncionarios(data);
       } else if (Array.isArray(data?.data)) {

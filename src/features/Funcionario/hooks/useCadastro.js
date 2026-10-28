@@ -3,6 +3,38 @@ import { useState } from "react";
 import Toast from "react-native-toast-message";
 import { createFuncionario } from "../funcionario.service.js";
 
+// Confere os dígitos verificadores do CPF
+const cpfValido = (numeros) => {
+  if (numeros.length !== 11 || /^(\d)\1{10}$/.test(numeros)) return false;
+
+  const digito = (tamanho) => {
+    let soma = 0;
+    for (let i = 0; i < tamanho; i++) {
+      soma += Number(numeros[i]) * (tamanho + 1 - i);
+    }
+    const resto = (soma * 10) % 11;
+    return resto === 10 ? 0 : resto;
+  };
+
+  return digito(9) === Number(numeros[9]) && digito(10) === Number(numeros[10]);
+};
+
+// Confere se DD/MM/AAAA é uma data que existe e não está no futuro
+const dataValida = (texto) => {
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) return false;
+
+  const [dia, mes, ano] = texto.split("/").map(Number);
+  const data = new Date(ano, mes - 1, dia);
+
+  return (
+    data.getFullYear() === ano &&
+    data.getMonth() === mes - 1 &&
+    data.getDate() === dia &&
+    ano >= 1900 &&
+    data <= new Date()
+  );
+};
+
 export function useCadastro({ navigation } = {}) {
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
@@ -22,11 +54,11 @@ export function useCadastro({ navigation } = {}) {
   const cpfNumeros = cpf.replace(/\D/g, "");
 
   const cpfInvalido =
-    cpfNumeros.length !== 11;
+    !cpfValido(cpfNumeros);
 
   const dataNascInvalida =
     !dataNasc ||
-    !/^\d{2}\/\d{2}\/\d{4}$/.test(dataNasc);
+    !dataValida(dataNasc);
 
   const telefoneNumeros =
     telefone.replace(/\D/g, "");
@@ -101,11 +133,6 @@ export function useCadastro({ navigation } = {}) {
     };
 
     try {
-      // console.log(
-      //   "Enviando funcionário:",
-      //   funcionario
-      // );
-
       const response =
         await createFuncionario(funcionario);
 

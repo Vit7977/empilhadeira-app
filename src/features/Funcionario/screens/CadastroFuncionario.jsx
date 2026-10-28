@@ -257,7 +257,7 @@ export default function CadastroFuncionario({ navigation }) {
           type="error"
           visible={cpfInvalido && cpf.length > 0}
         >
-          O CPF deve possuir 11 números.
+          Informe um CPF válido.
         </HelperText>
 
         {/* =========================
@@ -298,7 +298,7 @@ export default function CadastroFuncionario({ navigation }) {
           type="error"
           visible={dataNascInvalida && dataNasc.length > 0}
         >
-          Informe a data no formato DD/MM/AAAA.
+          Informe uma data válida no formato DD/MM/AAAA.
         </HelperText>
 
         {/* =========================

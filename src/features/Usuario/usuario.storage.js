@@ -1,25 +1,30 @@
-export const getStoredUser = () => {
-  if (typeof globalThis === "undefined" || !("localStorage" in globalThis)) {
-    return null;
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const STORAGE_KEY = "usuarioLogado";
+
+// Cópia em memória para leitura síncrona nas telas
+let usuarioEmCache = null;
+
+// Carrega o usuário salvo no dispositivo (chamar uma vez ao abrir o app)
+export const loadStoredUser = async () => {
+  try {
+    const storedUser = await AsyncStorage.getItem(STORAGE_KEY);
+    usuarioEmCache = storedUser ? JSON.parse(storedUser) : null;
+  } catch {
+    usuarioEmCache = null;
   }
 
-  try {
-    const storedUser = globalThis.localStorage.getItem("usuarioLogado");
-    return storedUser ? JSON.parse(storedUser) : null;
-  } catch {
-    return null;
-  }
+  return usuarioEmCache;
 };
 
+export const getStoredUser = () => usuarioEmCache;
+
 export const saveStoredUser = (usuario) => {
-  if (typeof globalThis !== "undefined" && "localStorage" in globalThis) {
-    globalThis.localStorage.setItem("usuarioLogado", JSON.stringify(usuario));
-  }
+  usuarioEmCache = usuario;
+  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(usuario)).catch(() => {});
 };
 
 export const removeStoredUser = () => {
-  if (typeof globalThis !== "undefined" && "localStorage" in globalThis) {
-    globalThis.localStorage.removeItem("usuarioLogado");
-  }
+  usuarioEmCache = null;
+  AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
 };
-
