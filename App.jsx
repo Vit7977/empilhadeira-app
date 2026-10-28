@@ -1,7 +1,17 @@
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme, View, Text, TouchableOpacity } from "react-native";
+import {
+  useColorScheme,
+  useWindowDimensions,
+  View,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import { useFuncionario } from "./src/features/Funcionario/hooks/useFuncionario.js";
 
 import {
@@ -13,6 +23,11 @@ import {
 
 import { useState, useEffect } from "react";
 import Toast from "react-native-toast-message";
+import { StatusBar } from "expo-status-bar";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import {
   loadStoredUser,
@@ -32,8 +47,19 @@ import Joystick from "./src/features/Joystick/screens/Joystick.jsx";
 
 const Tab = createBottomTabNavigator();
 
+// O provider precisa ficar acima de quem lê as áreas seguras (status bar e botões do Android)
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppConteudo />
+    </SafeAreaProvider>
+  );
+}
+
+function AppConteudo() {
   const colorScheme = useColorScheme();
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
   const [usuario, setUsuario] = useState(null);
   const [funcionario, setFuncionario] = useState(null);
@@ -139,12 +165,29 @@ export default function App() {
           },
         };
 
+  // Tema da navegação com as mesmas cores do Paper (evita fundo branco no modo escuro)
+  const baseNavTheme = colorScheme === "dark" ? DarkTheme : DefaultTheme;
+  const navTheme = {
+    ...baseNavTheme,
+    colors: {
+      ...baseNavTheme.colors,
+      primary: theme.colors.primary,
+      background: theme.colors.background,
+      card: theme.colors.surface,
+      text: theme.colors.onSurface,
+      border: theme.colors.outlineVariant,
+    },
+  };
+
+  // Em telas estreitas o nome do usuário ocupa menos espaço no cabeçalho
+  const larguraUsuario = Math.min(width * 0.45, 260);
+
   // Evita mostrar a tela de Login por um instante enquanto lê a sessão salva
   if (carregandoSessao) return null;
 
   return (
     <PaperProvider theme={theme}>
-      <NavigationContainer>
+      <NavigationContainer theme={navTheme}>
         <Tab.Navigator
           screenOptions={({ route }) => ({
             tabBarIcon: ({ focused }) => {
@@ -160,7 +203,7 @@ export default function App() {
                   break;
 
                 case "Cadastro Funcionario":
-                  iconName = focused ? "person-add" : "person-add-outline";
+                  iconName = focused ? "id-card" : "id-card-outline";
                   break;
 
                 case "Cadastro Usuário":
@@ -202,13 +245,12 @@ export default function App() {
 
             headerStyle: {
               backgroundColor: theme.colors.surface,
-              height: 60,
             },
 
             headerTintColor: theme.colors.onSurface,
 
             headerTitleStyle: {
-              fontSize: 20,
+              fontSize: width < 360 ? 17 : 20,
               fontWeight: "bold",
               color: theme.colors.onSurface,
             },
@@ -220,7 +262,7 @@ export default function App() {
                     flexDirection: "row",
                     alignItems: "center",
                     marginRight: 10,
-                    maxWidth: "100%",
+                    maxWidth: larguraUsuario,
                     overflow: "hidden",
                   }}
                 >
@@ -229,7 +271,7 @@ export default function App() {
                       flex: 1,
                       flexDirection: "column",
                       alignItems: "flex-end",
-                      maxWidth: "90%",
+                      flexShrink: 1,
                       marginRight: 6,
                     }}
                   >
@@ -279,11 +321,12 @@ export default function App() {
                 </View>
               ) : null,
 
+            // Soma a área dos botões/gestos do celular para a barra não ficar por baixo deles
             tabBarStyle: {
               backgroundColor: theme.colors.surface,
-              height: 65,
-              paddingBottom: 8,
-              paddingTop: 8,
+              height: 60 + insets.bottom,
+              paddingTop: 6,
+              paddingBottom: insets.bottom + 6,
               borderTopWidth: 0,
               elevation: 0,
             },
@@ -293,7 +336,7 @@ export default function App() {
             tabBarInactiveTintColor: "#777777",
 
             tabBarLabelStyle: {
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: "600",
             },
           })}
@@ -325,6 +368,7 @@ export default function App() {
                 <Tab.Screen
                   name="Cadastro Usuário"
                   component={CadastroUsuario}
+                  options={{ tabBarLabel: "Usuário" }}
                 />
               )}
 
@@ -332,11 +376,18 @@ export default function App() {
                 <Tab.Screen
                   name="Cadastro Funcionario"
                   component={CadastroFuncionario}
+                  options={{
+                    title: "Cadastro Funcionário",
+                    tabBarLabel: "Funcionário",
+                  }}
                 />
               )}
 
               {isAdmin && temEmpilhadeira === false && (
-                <Tab.Screen name="Cadastro Empilhadeira">
+                <Tab.Screen
+                  name="Cadastro Empilhadeira"
+                  options={{ tabBarLabel: "Empilhadeira" }}
+                >
                   {(props) => (
                     <CadastroEmpilhadeira
                       {...props}
@@ -361,7 +412,8 @@ export default function App() {
         </Tab.Navigator>
       </NavigationContainer>
 
-      <Toast />
+      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+      <Toast topOffset={insets.top + 10} />
     </PaperProvider>
   );
 }

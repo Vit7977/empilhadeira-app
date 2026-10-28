@@ -10,9 +10,15 @@ import {
 
 import { useState } from "react";
 import { useCadastro } from "../hooks/useCadastro";
+import {
+  useResponsive,
+  centralizado,
+  LARGURA_FORMULARIO,
+} from "../../../components/responsive";
 
 export default function CadastroFuncionario({ navigation }) {
   const theme = useTheme();
+  const { espacamento } = useResponsive();
 
   const {
     nome,
@@ -169,15 +175,15 @@ export default function CadastroFuncionario({ navigation }) {
 
   return (
     <ScrollView
+      style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
     >
       <View
         style={[
           styles.container,
-          {
-            backgroundColor: theme.colors.background,
-          },
+          centralizado(LARGURA_FORMULARIO),
+          { padding: espacamento },
         ]}
       >
 
@@ -459,7 +465,6 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    padding: 25,
     justifyContent: "center",
   },
 

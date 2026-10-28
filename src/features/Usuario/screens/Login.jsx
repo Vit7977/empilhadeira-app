@@ -1,18 +1,24 @@
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, ScrollView } from "react-native";
 import {
   Text,
   TextInput,
   Button,
   HelperText,
+  Icon,
   useTheme,
 } from "react-native-paper";
 import { useLogin } from "../hooks/useLogin";
+import {
+  useResponsive,
+  centralizado,
+} from "../../../components/responsive";
 
 export { getStoredUser, saveStoredUser } from "../usuario.storage.js";
 
 export default function Login({ onLoginSuccess, navigation }) {
   const theme = useTheme();
+  const { espacamento } = useResponsive();
   const {
     email,
     setEmail,
@@ -38,15 +44,29 @@ export default function Login({ onLoginSuccess, navigation }) {
   });
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    <ScrollView
+      style={{ backgroundColor: theme.colors.background }}
+      contentContainerStyle={[styles.container, { padding: espacamento }]}
+      keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.form}>
+      <View style={[styles.form, centralizado(420)]}>
+        <View
+          style={[
+            styles.logo,
+            { backgroundColor: theme.colors.secondaryContainer },
+          ]}
+        >
+          <Icon source="forklift" size={44} color={theme.colors.primary} />
+        </View>
+
         <Text variant="headlineLarge" style={styles.title}>
           Entrar
         </Text>
 
-        <Text variant="bodyLarge" style={styles.subtitle}>
+        <Text
+          variant="bodyLarge"
+          style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}
+        >
           Entre na sua conta para continuar
         </Text>
 
@@ -96,6 +116,8 @@ export default function Login({ onLoginSuccess, navigation }) {
           secureTextEntry={!mostrarSenha}
           maxLength={254}
           autoCapitalize="none"
+          returnKeyType="go"
+          onSubmitEditing={() => !loading && handleLogin()}
           outlineColor="gray"
           activeOutlineColor={theme.colors.primary}
           onFocus={() =>
@@ -152,15 +174,24 @@ export default function Login({ onLoginSuccess, navigation }) {
         </Button>
 
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
-    padding: 24,
+  },
+
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignSelf: "center",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
   },
 
   form: {
@@ -169,6 +200,7 @@ const styles = StyleSheet.create({
 
   title: {
     textAlign: "center",
+    fontWeight: "bold",
     marginBottom: 4,
   },
 

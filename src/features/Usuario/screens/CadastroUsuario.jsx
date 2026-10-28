@@ -13,9 +13,15 @@ import { useFocusEffect } from "@react-navigation/native";
 
 import { useCadastro } from "../hooks/useCadastro";
 import { useFuncionario } from "../../Funcionario/hooks/useFuncionario";
+import {
+  useResponsive,
+  centralizado,
+  LARGURA_FORMULARIO,
+} from "../../../components/responsive";
 
 export default function CadastroUsuario() {
   const theme = useTheme();
+  const { espacamento } = useResponsive();
 
   // ==========================================
   // FUNCIONÁRIOS
@@ -103,9 +109,11 @@ export default function CadastroUsuario() {
         backgroundColor:
           theme.colors.background,
       }}
-      contentContainerStyle={
-        styles.container
-      }
+      contentContainerStyle={[
+        styles.container,
+        centralizado(LARGURA_FORMULARIO),
+        { padding: espacamento },
+      ]}
       keyboardShouldPersistTaps="handled"
     >
       {/* =========================
@@ -451,8 +459,6 @@ export default function CadastroUsuario() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 25,
-    paddingTop: 50,
     justifyContent: "center",
   },
 

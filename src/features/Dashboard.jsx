@@ -11,11 +11,17 @@ import {
 } from "react-native-paper";
 import { useIsFocused } from "@react-navigation/native";
 import useEmpilhadeira from "./Empilhadeira/useEmpilhadeira";
+import {
+  useResponsive,
+  centralizado,
+  LARGURA_CONTEUDO,
+} from "../components/responsive";
 import useTelemetria from "./Telemetria/useTelemetria";
 
 export default function Dashboard({ route }) {
   const theme = useTheme();
   const isFocused = useIsFocused();
+  const { isTablet, espacamento } = useResponsive();
 
   const routeId = route?.params?.id ?? null;
 
@@ -84,6 +90,9 @@ export default function Dashboard({ route }) {
   // Enquanto não chega nenhuma telemetria, mostra "—" em vez de valores zerados
   const semDados = !telemetria;
   const exibir = (valor) => (semDados ? "—" : valor);
+  // 2 colunas no celular, 4 no tablet
+  const larguraStat = isTablet ? "23.5%" : "48%";
+
   const bateriaBaixa = !semDados && empilhadeira.bateria <= 15;
 
   const horaFormatada = empilhadeira.dataHora
@@ -100,7 +109,11 @@ export default function Dashboard({ route }) {
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        centralizado(LARGURA_CONTEUDO),
+        { padding: espacamento },
+      ]}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
@@ -137,94 +150,100 @@ export default function Dashboard({ route }) {
         </View>
       </View>
 
-      {/* Identificação da empilhadeira */}
-      <Card
-        style={[styles.card, { backgroundColor: theme.colors.surface }]}
-        mode="elevated"
-      >
-        <Card.Content>
-          <View style={styles.machineHeader}>
-            <View>
-              <Text
-                variant="labelMedium"
-                style={{ color: theme.colors.onSurfaceVariant }}
-              >
-                EMPILHADEIRA {selectedEmpilhadeira?.id || empilhadeiraId}
-              </Text>
+      <View style={isTablet ? styles.row : null}>
+        <View style={isTablet ? styles.rowItem : null}>
+          {/* Identificação da empilhadeira */}
+          <Card
+            style={[styles.card, { backgroundColor: theme.colors.surface }]}
+            mode="elevated"
+          >
+            <Card.Content>
+              <View style={styles.machineHeader}>
+                <View>
+                  <Text
+                    variant="labelMedium"
+                    style={{ color: theme.colors.onSurfaceVariant }}
+                  >
+                    EMPILHADEIRA {selectedEmpilhadeira?.id || empilhadeiraId}
+                  </Text>
 
-              <Text
-                variant="titleLarge"
-                style={{ fontSize: 16, fontWeight: "bold" }}
-              >
-                {loading && !selectedEmpilhadeira
-                  ? "Carregando..."
-                  : empilhadeira.codigo}
-              </Text>
-            </View>
+                  <Text
+                    variant="titleLarge"
+                    style={{ fontSize: 16, fontWeight: "bold" }}
+                  >
+                    {loading && !selectedEmpilhadeira
+                      ? "Carregando..."
+                      : empilhadeira.codigo}
+                  </Text>
+                </View>
 
-            <Chip
-              icon={
-                empilhadeira.status?.toLowerCase() === "disponivel"
-                  ? "check-circle"
-                  : "circle"
-              }
-              style={{
-                backgroundColor: theme.colors.secondaryContainer,
-              }}
-              textStyle={{
-                color: theme.colors.primary,
-                textTransform: "capitalize",
-              }}
-            >
-              {loading && !selectedEmpilhadeira
-                ? "Carregando..."
-                : empilhadeira.status}
-            </Chip>
-          </View>
-        </Card.Content>
-      </Card>
+                <Chip
+                  icon={
+                    empilhadeira.status?.toLowerCase() === "disponivel"
+                      ? "check-circle"
+                      : "circle"
+                  }
+                  style={{
+                    backgroundColor: theme.colors.secondaryContainer,
+                  }}
+                  textStyle={{
+                    color: theme.colors.primary,
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {loading && !selectedEmpilhadeira
+                    ? "Carregando..."
+                    : empilhadeira.status}
+                </Chip>
+              </View>
+            </Card.Content>
+          </Card>
+        </View>
 
-      {/* Bateria */}
-      <Card
-        style={[styles.card, { backgroundColor: theme.colors.surface }]}
-        mode="elevated"
-      >
-        <Card.Content>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitle}>
-              {bateriaBaixa ? (
-                <Icon
-                  source="battery-low"
-                  size={24}
-                  color={theme.colors.primary}
-                />
-              ) : (
-                <Icon source="battery" size={24} color={theme.colors.primary} />
-              )}
+        <View style={isTablet ? styles.rowItem : null}>
+          {/* Bateria */}
+          <Card
+            style={[styles.card, { backgroundColor: theme.colors.surface }]}
+            mode="elevated"
+          >
+            <Card.Content>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitle}>
+                  {bateriaBaixa ? (
+                    <Icon
+                      source="battery-low"
+                      size={24}
+                      color={theme.colors.primary}
+                    />
+                  ) : (
+                    <Icon source="battery" size={24} color={theme.colors.primary} />
+                  )}
 
-              <Text variant="titleMedium">Bateria</Text>
-            </View>
+                  <Text variant="titleMedium">Bateria</Text>
+                </View>
 
-            <Text
-              variant="titleLarge"
-              style={{
-                color: bateriaBaixa ? theme.colors.error : theme.colors.primary,
-              }}
-            >
-              {exibir(`${empilhadeira.bateria}%`)}
-            </Text>
-          </View>
+                <Text
+                  variant="titleLarge"
+                  style={{
+                    color: bateriaBaixa ? theme.colors.error : theme.colors.primary,
+                  }}
+                >
+                  {exibir(`${empilhadeira.bateria}%`)}
+                </Text>
+              </View>
 
-          <ProgressBar
-            progress={Math.min(
-              Math.max((empilhadeira.bateria || 0) / 100, 0),
-              1,
-            )}
-            color={bateriaColor}
-            style={styles.progress}
-          />
-        </Card.Content>
-      </Card>
+              <ProgressBar
+                progress={Math.min(
+                  Math.max((empilhadeira.bateria || 0) / 100, 0),
+                  1,
+                )}
+                color={bateriaColor}
+                style={styles.progress}
+              />
+            </Card.Content>
+          </Card>
+        </View>
+      </View>
 
       {/* Estatísticas */}
       <Text variant="titleLarge" style={styles.sectionTitle}>
@@ -234,7 +253,10 @@ export default function Dashboard({ route }) {
       <View style={styles.statsGrid}>
         {/* Velocidade */}
         <Card
-          style={[styles.statCard, { backgroundColor: theme.colors.surface }]}
+          style={[
+            styles.statCard,
+            { backgroundColor: theme.colors.surface, width: larguraStat },
+          ]}
           mode="elevated"
         >
           <Card.Content>
@@ -257,7 +279,10 @@ export default function Dashboard({ route }) {
 
         {/* Peso */}
         <Card
-          style={[styles.statCard, { backgroundColor: theme.colors.surface }]}
+          style={[
+            styles.statCard,
+            { backgroundColor: theme.colors.surface, width: larguraStat },
+          ]}
           mode="elevated"
         >
           <Card.Content>
@@ -284,7 +309,10 @@ export default function Dashboard({ route }) {
 
         {/* Temperatura */}
         <Card
-          style={[styles.statCard, { backgroundColor: theme.colors.surface }]}
+          style={[
+            styles.statCard,
+            { backgroundColor: theme.colors.surface, width: larguraStat },
+          ]}
           mode="elevated"
         >
           <Card.Content>
@@ -300,7 +328,10 @@ export default function Dashboard({ route }) {
 
         {/* Obstáculo */}
         <Card
-          style={[styles.statCard, { backgroundColor: theme.colors.surface }]}
+          style={[
+            styles.statCard,
+            { backgroundColor: theme.colors.surface, width: larguraStat },
+          ]}
           mode="elevated"
         >
           <Card.Content>
@@ -333,120 +364,126 @@ export default function Dashboard({ route }) {
         </Card>
       </View>
 
-      {/* Localização */}
-      <Text variant="titleLarge" style={styles.sectionTitle}>
-        Localização
-      </Text>
+      <View style={isTablet ? styles.row : null}>
+        <View style={isTablet ? styles.rowItem : null}>
+          {/* Localização */}
+          <Text variant="titleLarge" style={styles.sectionTitle}>
+            Localização
+          </Text>
 
-      <Card
-        style={[styles.card, { backgroundColor: theme.colors.surface }]}
-        mode="elevated"
-      >
-        <Card.Content>
-          <View style={styles.locationHeader}>
-            <View style={styles.cardTitle}>
-              <Icon
-                source="map-marker"
-                size={26}
-                color={theme.colors.primary}
-              />
+          <Card
+            style={[styles.card, { backgroundColor: theme.colors.surface }]}
+            mode="elevated"
+          >
+            <Card.Content>
+              <View style={styles.locationHeader}>
+                <View style={styles.cardTitle}>
+                  <Icon
+                    source="map-marker"
+                    size={26}
+                    color={theme.colors.primary}
+                  />
 
-              <Text variant="titleMedium">Posição atual</Text>
-            </View>
-          </View>
+                  <Text variant="titleMedium">Posição atual</Text>
+                </View>
+              </View>
 
-          <Divider style={styles.divider} />
+              <Divider style={styles.divider} />
 
-          <View style={styles.positionContainer}>
-            <View style={styles.positionItem}>
-              <Text
-                variant="labelMedium"
-                style={{
-                  color: theme.colors.onSurfaceVariant,
-                }}
-              >
-                EIXO X
-              </Text>
+              <View style={styles.positionContainer}>
+                <View style={styles.positionItem}>
+                  <Text
+                    variant="labelMedium"
+                    style={{
+                      color: theme.colors.onSurfaceVariant,
+                    }}
+                  >
+                    EIXO X
+                  </Text>
 
-              <Text variant="headlineSmall">{exibir(empilhadeira.posicaoX.toFixed(2))}</Text>
-            </View>
+                  <Text variant="headlineSmall">{exibir(empilhadeira.posicaoX.toFixed(2))}</Text>
+                </View>
 
-            <View style={styles.positionItem}>
-              <Text
-                variant="labelMedium"
-                style={{
-                  color: theme.colors.onSurfaceVariant,
-                }}
-              >
-                EIXO Y
-              </Text>
+                <View style={styles.positionItem}>
+                  <Text
+                    variant="labelMedium"
+                    style={{
+                      color: theme.colors.onSurfaceVariant,
+                    }}
+                  >
+                    EIXO Y
+                  </Text>
 
-              <Text variant="headlineSmall">{exibir(empilhadeira.posicaoY.toFixed(2))}</Text>
-            </View>
-          </View>
-        </Card.Content>
-      </Card>
+                  <Text variant="headlineSmall">{exibir(empilhadeira.posicaoY.toFixed(2))}</Text>
+                </View>
+              </View>
+            </Card.Content>
+          </Card>
+        </View>
 
-      {/* Status dos sensores */}
-      <Text variant="titleLarge" style={styles.sectionTitle}>
-        Sistema
-      </Text>
+        <View style={isTablet ? styles.rowItem : null}>
+          {/* Status dos sensores */}
+          <Text variant="titleLarge" style={styles.sectionTitle}>
+            Sistema
+          </Text>
 
-      <Card
-        style={[styles.card, { backgroundColor: theme.colors.surface }]}
-        mode="elevated"
-      >
-        <Card.Content>
+          <Card
+            style={[styles.card, { backgroundColor: theme.colors.surface }]}
+            mode="elevated"
+          >
+            <Card.Content>
 
 
-          <View style={styles.systemRow}>
-            <View style={styles.systemLeft}>
-              <Icon source="wifi" size={24} color={theme.colors.primary} />
+              <View style={styles.systemRow}>
+                <View style={styles.systemLeft}>
+                  <Icon source="wifi" size={24} color={theme.colors.primary} />
 
-              <Text variant="bodyLarge">Conexão</Text>
-            </View>
+                  <Text variant="bodyLarge">Conexão</Text>
+                </View>
 
-            <Chip
-              icon={erroTelemetria ? "alert-circle" : "check"}
-              style={{
-                backgroundColor: erroTelemetria
-                  ? theme.colors.errorContainer
-                  : theme.colors.secondaryContainer,
-              }}
-              textStyle={{
-                color: erroTelemetria
-                  ? theme.colors.error
-                  : theme.colors.primary,
-              }}
-            >
-              {erroTelemetria ? "Offline" : "Online"}
-            </Chip>
-          </View>
+                <Chip
+                  icon={erroTelemetria ? "alert-circle" : "check"}
+                  style={{
+                    backgroundColor: erroTelemetria
+                      ? theme.colors.errorContainer
+                      : theme.colors.secondaryContainer,
+                  }}
+                  textStyle={{
+                    color: erroTelemetria
+                      ? theme.colors.error
+                      : theme.colors.primary,
+                  }}
+                >
+                  {erroTelemetria ? "Offline" : "Online"}
+                </Chip>
+              </View>
 
-          <Divider style={styles.divider} />
+              <Divider style={styles.divider} />
 
-          <View style={styles.systemRow}>
-            <View style={styles.systemLeft}>
-              <Icon
-                source="navigation"
-                size={24}
-                color={theme.colors.primary}
-              />
+              <View style={styles.systemRow}>
+                <View style={styles.systemLeft}>
+                  <Icon
+                    source="navigation"
+                    size={24}
+                    color={theme.colors.primary}
+                  />
 
-              <Text variant="bodyLarge">Navegação</Text>
-            </View>
+                  <Text variant="bodyLarge">Navegação</Text>
+                </View>
 
-            <Chip
-              icon="check"
-              style={{
-                backgroundColor: theme.colors.secondaryContainer,
-              }}
-            >
-              Ativa
-            </Chip>
-          </View>
-        </Card.Content>
-      </Card>
+                <Chip
+                  icon="check"
+                  style={{
+                    backgroundColor: theme.colors.secondaryContainer,
+                  }}
+                >
+                  Ativa
+                </Chip>
+              </View>
+            </Card.Content>
+          </Card>
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -457,8 +494,16 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    padding: 24,
     paddingBottom: 40,
+  },
+
+  row: {
+    flexDirection: "row",
+    gap: 16,
+  },
+
+  rowItem: {
+    flex: 1,
   },
 
   header: {
@@ -525,7 +570,6 @@ const styles = StyleSheet.create({
   },
 
   statCard: {
-    width: "48%",
     borderRadius: 12,
     marginBottom: 12,
   },

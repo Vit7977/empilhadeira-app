@@ -28,6 +28,11 @@ import UsuarioCard from "../components/UsuarioCard.jsx";
 import FuncionarioCard from "../components/FuncionarioCard.jsx";
 import EmpilhadeiraCard from "../components/EmpilhadeiraCard.jsx";
 import EditModal from "../components/EditModal.jsx";
+import {
+  useResponsive,
+  centralizado,
+  LARGURA_CONTEUDO,
+} from "../../../components/responsive";
 
 import {
   updateUsuario,
@@ -40,6 +45,11 @@ import {
 
 export default function Consulta({ onEmpilhadeiraExcluida }) {
   const theme = useTheme();
+  const { isTablet, espacamento } = useResponsive();
+
+  // No tablet os cards ficam em 2 colunas
+  const gridStyle = isTablet ? styles.grid : null;
+  const gridItemStyle = isTablet ? styles.gridItem : null;
 
   // Verificação de permissão de Administrador
   const [isAdmin, setIsAdmin] = useState(true);
@@ -197,7 +207,11 @@ export default function Consulta({ onEmpilhadeiraExcluida }) {
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView
         style={[styles.container, { backgroundColor: theme.colors.background }]}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[
+          styles.contentContainer,
+          centralizado(LARGURA_CONTEUDO),
+          { padding: espacamento },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -464,43 +478,46 @@ export default function Consulta({ onEmpilhadeiraExcluida }) {
 
             {/* USUÁRIOS: Em Formato de Cards Modernos com Editar e Excluir */}
             {tipoConsulta === "usuarios" && (
-              <View>
+              <View style={gridStyle}>
                 {filteredData.map((item) => (
-                  <UsuarioCard
-                    key={item.id}
-                    usuario={item}
-                    funcionario={funcionariosMap[item.funcionario]}
-                    onEdit={(u) => handleOpenEdit(u, "usuarios")}
-                    onDelete={(u) => handlePromptDelete(u, "usuarios", u.email)}
-                  />
+                  <View key={item.id} style={gridItemStyle}>
+                    <UsuarioCard
+                      usuario={item}
+                      funcionario={funcionariosMap[item.funcionario]}
+                      onEdit={(u) => handleOpenEdit(u, "usuarios")}
+                      onDelete={(u) => handlePromptDelete(u, "usuarios", u.email)}
+                    />
+                  </View>
                 ))}
               </View>
             )}
 
             {/* FUNCIONÁRIOS: Em Formato de Cards Modernos com Editar e Excluir */}
             {tipoConsulta === "funcionarios" && (
-              <View>
+              <View style={gridStyle}>
                 {filteredData.map((item) => (
-                  <FuncionarioCard
-                    key={item.id}
-                    funcionario={item}
-                    onEdit={(f) => handleOpenEdit(f, "funcionarios")}
-                    onDelete={(f) => handlePromptDelete(f, "funcionarios", f.nome)}
-                  />
+                  <View key={item.id} style={gridItemStyle}>
+                    <FuncionarioCard
+                      funcionario={item}
+                      onEdit={(f) => handleOpenEdit(f, "funcionarios")}
+                      onDelete={(f) => handlePromptDelete(f, "funcionarios", f.nome)}
+                    />
+                  </View>
                 ))}
               </View>
             )}
 
             {/* EMPILHADEIRAS: Em Formato de Cards Modernos com Editar e Excluir */}
             {tipoConsulta === "empilhadeiras" && (
-              <View>
+              <View style={gridStyle}>
                 {filteredData.map((item) => (
-                  <EmpilhadeiraCard
-                    key={item.id}
-                    empilhadeira={item}
-                    onEdit={(e) => handleOpenEdit(e, "empilhadeiras")}
-                    onDelete={(e) => handlePromptDelete(e, "empilhadeiras", e.codigo)}
-                  />
+                  <View key={item.id} style={gridItemStyle}>
+                    <EmpilhadeiraCard
+                      empilhadeira={item}
+                      onEdit={(e) => handleOpenEdit(e, "empilhadeiras")}
+                      onDelete={(e) => handlePromptDelete(e, "empilhadeiras", e.codigo)}
+                    />
+                  </View>
                 ))}
               </View>
             )}
@@ -513,7 +530,7 @@ export default function Consulta({ onEmpilhadeiraExcluida }) {
         <Dialog
           visible={Boolean(itemParaExcluir)}
           onDismiss={() => !deleting && setItemParaExcluir(null)}
-          style={{ borderRadius: 16 }}
+          style={styles.dialog}
         >
           <Dialog.Title style={{ fontWeight: "bold" }}>
             Confirmar Exclusão
@@ -563,12 +580,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 16,
     paddingBottom: 32,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  gridItem: {
+    width: "49.2%",
+  },
+  dialog: {
+    borderRadius: 16,
+    width: "88%",
+    maxWidth: 440,
+    alignSelf: "center",
   },
   header: {
     flexDirection: "row",
-    justifyContent: "start",
+    justifyContent: "flex-start",
     alignItems: "center",
     marginBottom: 16,
     gap: 12,

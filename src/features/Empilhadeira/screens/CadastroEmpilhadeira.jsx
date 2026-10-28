@@ -9,9 +9,15 @@ import {
   useTheme,
 } from "react-native-paper";
 import { useCadastro } from "../hooks/useCadastro.js";
+import {
+  useResponsive,
+  centralizado,
+  LARGURA_FORMULARIO,
+} from "../../../components/responsive";
 
 export default function CadastroEmpilhadeira({ navigation, onCadastrado }) {
   const theme = useTheme();
+  const { espacamento } = useResponsive();
 
   const {
     codigo,
@@ -45,15 +51,15 @@ export default function CadastroEmpilhadeira({ navigation, onCadastrado }) {
 
   return (
     <ScrollView
+      style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
     >
       <View
         style={[
           styles.container,
-          {
-            backgroundColor: theme.colors.background,
-          },
+          centralizado(LARGURA_FORMULARIO),
+          { padding: espacamento },
         ]}
       >
         {/* =========================
@@ -186,7 +192,6 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    padding: 25,
     justifyContent: "center",
   },
 

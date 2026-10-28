@@ -444,7 +444,10 @@ export default function EditModal({
 
 const styles = StyleSheet.create({
   modalContainer: {
-    margin: 20,
+    // Ocupa quase toda a largura no celular, limitado em tablets e na web
+    width: "92%",
+    maxWidth: 560,
+    alignSelf: "center",
     padding: 20,
     borderRadius: 16,
     maxHeight: "85%",
