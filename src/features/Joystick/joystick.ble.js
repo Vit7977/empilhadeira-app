@@ -3,9 +3,10 @@ import { BleManager } from "react-native-ble-plx";
 
 /*
  * Comunicação Bluetooth (BLE) com o ESP32 da empilhadeira.
- * Os valores abaixo precisam ser IGUAIS aos do firmware (empilhadeira_ble.ino).
+ * Os valores abaixo precisam ser IGUAIS aos do firmware
+ * (firmware/empilhadeira_ble/empilhadeira_ble.ino).
  */
-export const BLE_NOME = "Empilhadeira";
+export const BLE_NOME = "EMPILHADEIRA-BLE";
 export const BLE_SERVICO = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
 export const BLE_COMANDO = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 
@@ -49,6 +50,7 @@ export const pedirPermissoes = async () => {
 export const conectarEmpilhadeira = (ble) =>
   new Promise((resolve, reject) => {
     let finalizado = false;
+    let conectando = false;
 
     const finalizar = (erro, id) => {
       if (finalizado) return;
@@ -68,8 +70,14 @@ export const conectarEmpilhadeira = (ble) =>
     ble.startDeviceScan(null, null, async (erro, dispositivo) => {
       if (erro) return finalizar(erro);
 
-      const nome = dispositivo?.name || dispositivo?.localName;
-      if (nome !== BLE_NOME || finalizado) return;
+      if (finalizado || !dispositivo) return;
+
+      // Reconhece pelo nome ou pelo serviço anunciado (o nome às vezes só vem na scan response)
+      const nome = dispositivo.name || dispositivo.localName;
+      const servicos = (dispositivo.serviceUUIDs ?? []).map((u) => u.toLowerCase());
+      if (nome !== BLE_NOME && !servicos.includes(BLE_SERVICO)) return;
+      if (conectando) return;
+      conectando = true;
 
       ble.stopDeviceScan();
 
