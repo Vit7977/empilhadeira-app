@@ -1,101 +1,293 @@
+
 import { PermissionsAndroid, Platform } from "react-native";
 import { BleManager } from "react-native-ble-plx";
+import { encode } from "base-64";
 
-/*
- * Comunicação Bluetooth (BLE) com o ESP32 da empilhadeira.
- * Os valores abaixo precisam ser IGUAIS aos do firmware
- * (firmware/empilhadeira_ble/empilhadeira_ble.ino).
- */
+// ========================================
+// CONFIGURAÇÕES BLE DO ESP32-C3
+// ========================================
+
 export const BLE_NOME = "EMPILHADEIRA-BLE";
-export const BLE_SERVICO = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-export const BLE_COMANDO = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 
-const TEMPO_BUSCA_MS = 10000;
+export const BLE_SERVICO =
+  "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+
+export const BLE_COMANDO =
+  "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+
+export const BLE_RESPOSTA =
+  "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+
+const TEMPO_BUSCA_MS = 15000;
+
+// ========================================
+// GERENCIADOR BLE
+// ========================================
 
 let manager = null;
 
-// O BLE só existe no APK (não funciona no Expo Go nem na web)
 export const getManager = () => {
-  if (manager) return manager;
-
-  try {
+  if (!manager) {
     manager = new BleManager();
-  } catch {
-    manager = null;
   }
 
   return manager;
 };
 
+// ========================================
+// PERMISSÕES ANDROID
+// ========================================
+
 export const pedirPermissoes = async () => {
-  if (Platform.OS !== "android") return true;
+  if (Platform.OS !== "android") {
+    return true;
+  }
 
-  // Android 12+ usa as permissões de Bluetooth; versões antigas pedem localização
-  const permissoes =
-    Platform.Version >= 31
-      ? [
-          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-        ]
-      : [PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION];
+  try {
+    const permissoes =
+      Platform.Version >= 31
+        ? [
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          ]
+        : [
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          ];
 
-  const resultado = await PermissionsAndroid.requestMultiple(permissoes);
+    const resultado =
+      await PermissionsAndroid.requestMultiple(permissoes);
 
-  return permissoes.every(
-    (p) => resultado[p] === PermissionsAndroid.RESULTS.GRANTED,
-  );
+    return permissoes.every(
+      (p) =>
+        resultado[p] === PermissionsAndroid.RESULTS.GRANTED
+    );
+  } catch (erro) {
+    console.log("Erro nas permissões:", erro);
+    return false;
+  }
 };
 
-// Procura a empilhadeira pelo nome e conecta. Retorna o id do dispositivo.
-export const conectarEmpilhadeira = (ble) =>
-  new Promise((resolve, reject) => {
+// ========================================
+// CONECTAR À EMPILHADEIRA
+// ========================================
+
+export const conectarEmpilhadeira = async (ble) => {
+  if (!ble) {
+    throw new Error("Gerenciador BLE não inicializado");
+  }
+
+  const permissao = await pedirPermissoes();
+
+  if (!permissao) {
+    throw new Error("Permissão Bluetooth não concedida");
+  }
+
+  return new Promise((resolve, reject) => {
     let finalizado = false;
     let conectando = false;
 
     const finalizar = (erro, id) => {
       if (finalizado) return;
+
       finalizado = true;
+
       clearTimeout(timer);
       ble.stopDeviceScan();
 
-      if (erro) reject(erro);
-      else resolve(id);
+      if (erro) {
+        reject(erro);
+      } else {
+        resolve(id);
+      }
     };
 
-    const timer = setTimeout(
-      () => finalizar(new Error("Empilhadeira não encontrada")),
-      TEMPO_BUSCA_MS,
+    const timer = setTimeout(() => {
+      finalizar(
+        new Error("EMPILHADEIRA-BLE não encontrada")
+      );
+    }, TEMPO_BUSCA_MS);
+
+    ble.startDeviceScan(
+      null,
+      null,
+      async (erro, dispositivo) => {
+        if (finalizado) return;
+
+        if (erro) {
+          finalizar(erro);
+          return;
+        }
+
+        if (!dispositivo || conectando) return;
+
+        const nome =
+          dispositivo.name || dispositivo.localName;
+
+        const servicos = (
+          dispositivo.serviceUUIDs || []
+        ).map((uuid) => uuid.toLowerCase());
+
+        const encontrado =
+          nome === BLE_NOME ||
+          servicos.includes(BLE_SERVICO);
+
+        if (!encontrado) return;
+
+        conectando = true;
+        ble.stopDeviceScan();
+
+        try {
+          console.log("Dispositivo encontrado:", nome);
+
+          const conectado = await dispositivo.connect({
+            timeout: 10000,
+          });
+
+          await conectado.discoverAllServicesAndCharacteristics();
+
+          // Confirma a existência do serviço e característica RX
+          const servico = await conectado.services();
+
+          const existeServico = servico.some(
+            (s) => s.uuid.toLowerCase() === BLE_SERVICO
+          );
+
+          if (!existeServico) {
+            throw new Error("Serviço BLE não encontrado");
+          }
+
+          const caracteristicas =
+            await conectado.characteristicsForService(
+              BLE_SERVICO
+            );
+
+          const existeRX = caracteristicas.some(
+            (c) => c.uuid.toLowerCase() === BLE_COMANDO
+          );
+
+          if (!existeRX) {
+            throw new Error("Característica RX não encontrada");
+          }
+
+          console.log("Empilhadeira conectada:", conectado.id);
+
+          finalizar(null, conectado.id);
+
+        } catch (e) {
+          finalizar(e);
+        }
+      }
+    );
+  });
+};
+
+// ========================================
+// ENVIAR COMANDOS PARA O ESP32
+// ========================================
+
+export const enviarComando = async (ble, id, texto) => {
+  if (!ble || !id) {
+    throw new Error("ESP32 não está conectado");
+  }
+
+  const comando = String(texto).trim();
+
+  if (!comando) {
+    throw new Error("Comando vazio");
+  }
+
+  console.log("Enviando para ESP32:", comando);
+
+  const base64 = encode(comando);
+
+  try {
+    await ble.writeCharacteristicWithoutResponseForDevice(
+      id,
+      BLE_SERVICO,
+      BLE_COMANDO,
+      base64
     );
 
-    ble.startDeviceScan(null, null, async (erro, dispositivo) => {
-      if (erro) return finalizar(erro);
+    return true;
 
-      if (finalizado || !dispositivo) return;
+  } catch (erro) {
+    console.log("Erro ao enviar comando:", erro);
+    throw erro;
+  }
+};
 
-      // Reconhece pelo nome ou pelo serviço anunciado (o nome às vezes só vem na scan response)
-      const nome = dispositivo.name || dispositivo.localName;
-      const servicos = (dispositivo.serviceUUIDs ?? []).map((u) => u.toLowerCase());
-      if (nome !== BLE_NOME && !servicos.includes(BLE_SERVICO)) return;
-      if (conectando) return;
-      conectando = true;
+// ========================================
+// COMANDO DO JOYSTICK
+// ========================================
 
-      ble.stopDeviceScan();
+export const enviarJoystick = async (
+  ble,
+  id,
+  x,
+  y,
+  elevacao = 0
+) => {
+  const limitar = (valor) =>
+    Math.max(-100, Math.min(100, Math.round(valor)));
 
-      try {
-        const conectado = await dispositivo.connect({ timeout: 8000 });
-        await conectado.discoverAllServicesAndCharacteristics();
-        finalizar(null, conectado.id);
-      } catch (e) {
-        finalizar(e);
-      }
-    });
-  });
+  x = limitar(x);
+  y = limitar(y);
 
-// Envia "x,y,elevacao" (texto simples, convertido para base64 como a biblioteca exige)
-export const enviarComando = (ble, id, texto) =>
-  ble.writeCharacteristicWithoutResponseForDevice(
-    id,
-    BLE_SERVICO,
-    BLE_COMANDO,
-    btoa(texto),
+  elevacao = Math.max(
+    0,
+    Math.min(100, Math.round(elevacao))
   );
+
+  const comando = `${x},${y},${elevacao}`;
+
+  return enviarComando(ble, id, comando);
+};
+
+// ========================================
+// PARAR OS MOTORES
+// ========================================
+
+export const pararEmpilhadeira = async (ble, id) => {
+  try {
+    await enviarJoystick(ble, id, 0, 0, 0);
+    console.log("Motores parados");
+    return true;
+  } catch (erro) {
+    console.log("Erro ao parar:", erro);
+    return false;
+  }
+};
+
+// ========================================
+// DESCONECTAR
+// ========================================
+
+export const desconectarEmpilhadeira = async (ble, id) => {
+  if (!ble || !id) return;
+
+  try {
+    await pararEmpilhadeira(ble, id);
+  } catch (erro) {
+    console.log("Não foi possível enviar parada:", erro);
+  }
+
+  try {
+    await ble.cancelDeviceConnection(id);
+    console.log("Empilhadeira desconectada");
+  } catch (erro) {
+    console.log("Erro ao desconectar:", erro);
+  }
+};
+
+// ========================================
+// VERIFICAR CONEXÃO
+// ========================================
+
+export const verificarConexao = async (ble, id) => {
+  try {
+    const dispositivo = await ble.isDeviceConnected(id);
+    return dispositivo;
+  } catch {
+    return false;
+  }
+};

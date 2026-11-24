@@ -13,7 +13,9 @@ import {
   getManager,
   pedirPermissoes,
   conectarEmpilhadeira,
-  enviarComando,
+  enviarJoystick,
+  desconectarEmpilhadeira,
+  verificarConexao,
 } from "../joystick.ble.js";
 
 const CORES = {
@@ -48,6 +50,15 @@ const INTERVALO_ENVIO_MS = 100;
 
 const limitar = (valor, min, max) => Math.min(Math.max(valor, min), max);
 
+// No Expo Go o módulo nativo não existe e `new BleManager()` lança erro
+const obterBle = () => {
+  try {
+    return getManager();
+  } catch {
+    return null;
+  }
+};
+
 export default function Joystick({ navigation }) {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
@@ -67,6 +78,7 @@ export default function Joystick({ navigation }) {
   const comandoRef = useRef({ direcao, elevacao });
   comandoRef.current = { direcao, elevacao };
 
+  const bleRef = useRef(null); // BleManager em uso
   const dispositivoRef = useRef(null); // id do ESP32 conectado
   const enviandoRef = useRef(false); // evita acumular envios se o Bluetooth atrasar
   const [conexao, setConexao] = useState("procurando");
@@ -164,33 +176,43 @@ export default function Joystick({ navigation }) {
    * ============================
    * COMUNICAÇÃO COM O ESP32 (BLUETOOTH)
    * ============================
-   * Envia "x,y,elevacao" (x/y de -100 a 100, elevação de 0 a 100).
+   * enviarJoystick() já arredonda, limita (x/y de -100 a 100, elevação de 0 a 100)
+   * e monta a string "x,y,elevacao". Aqui só convertemos a escala (-1..1 → -100..100).
    * O firmware lê os dois primeiros valores; a elevação fica pronta para quando houver motor de garfo.
    */
-  const formatarComando = (x, y, e) =>
-    `${Math.round(x * 100)},${Math.round(y * 100)},${Math.round(e * 100)}`;
-
   const enviar = (x, y, e) => {
-    const ble = getManager();
+    const ble = bleRef.current;
     const id = dispositivoRef.current;
     if (!ble || !id || enviandoRef.current) return;
 
     enviandoRef.current = true;
-    enviarComando(ble, id, formatarComando(x, y, e))
+    enviarJoystick(ble, id, x * 100, y * 100, e * 100)
       .catch(() => {})
       .finally(() => {
         enviandoRef.current = false;
       });
   };
 
-  // O próximo envio periódico (até 100 ms) já leva o comando de parada
-  const parar = () => soltarTudo();
+  // Parada de emergência: zera a direção e já manda o comando, sem esperar o próximo ciclo
+  const parar = () => {
+    soltarTudo();
+
+    const ble = bleRef.current;
+    const id = dispositivoRef.current;
+    if (ble && id) {
+      enviarJoystick(ble, id, 0, 0, comandoRef.current.elevacao * 100).catch(
+        () => {}
+      );
+    }
+  };
 
   // Só fica conectado enquanto a tela do Joystick estiver aberta
   useEffect(() => {
     if (!isFocused) return;
 
-    const ble = getManager();
+    const ble = obterBle();
+    bleRef.current = ble;
+
     if (!ble) {
       setConexao("indisponivel");
       return;
@@ -224,7 +246,7 @@ export default function Joystick({ navigation }) {
           // "Unknown"/"Resetting" acontecem por instantes ao abrir o app
           tentarDeNovo(
             estado === "PoweredOff" ? "bluetooth-desligado" : "procurando",
-            1000,
+            1000
           );
           return;
         }
@@ -234,6 +256,12 @@ export default function Joystick({ navigation }) {
 
         if (!ativo) {
           ble.cancelDeviceConnection(id).catch(() => {});
+          return;
+        }
+
+        // Garante que a conexão não caiu logo depois de estabelecida
+        if (!(await verificarConexao(ble, id))) {
+          tentarDeNovo("desconectado", 1000);
           return;
         }
 
@@ -268,11 +296,7 @@ export default function Joystick({ navigation }) {
       // Manda parar os motores e só então desconecta
       const id = dispositivoRef.current;
       dispositivoRef.current = null;
-      if (id) {
-        enviarComando(ble, id, formatarComando(0, 0, comandoRef.current.elevacao))
-          .catch(() => {})
-          .finally(() => ble.cancelDeviceConnection(id).catch(() => {}));
-      }
+      if (id) desconectarEmpilhadeira(ble, id);
 
       soltarTudo();
     };
