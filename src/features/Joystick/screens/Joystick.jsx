@@ -60,6 +60,11 @@ const CONEXAO = {
 // O ESP32 para os motores se ficar 500 ms sem receber comando
 const INTERVALO_ENVIO_MS = 100;
 
+// Inverte o sentido enviado ao ESP32 (use se o carrinho andar ao contrário).
+// Só afeta o comando enviado; a tela continua mostrando a direção do dedo.
+const INVERTER_X = true; // esquerda <-> direita
+const INVERTER_Y = true; // frente <-> ré
+
 // Espaço reservado para o rótulo embaixo de cada controle
 const ALTURA_ROTULO = 56; // rótulo / botão GARFO 0%
 
@@ -67,7 +72,7 @@ const ALTURA_ROTULO = 56; // rótulo / botão GARFO 0%
 //   true  = volta devagar ao centro e o garfo para
 //   false = fica onde você soltou e o garfo continua (para no fim de curso
 //           ou quando você leva o slider de volta ao centro / aperta PARAR)
-const SLIDER_VOLTA_AO_CENTRO = false;
+const SLIDER_VOLTA_AO_CENTRO = true;
 
 // Tempo da volta ao centro (aumente para ficar mais lento)
 const TEMPO_RETORNO_SLIDER_MS = 400;
@@ -123,9 +128,10 @@ export default function Joystick({ navigation }) {
 
   const joystickRef = useRef(null);
   const sliderRef = useRef(null);
+  const pararRef = useRef(null);
 
   // Posição dos controles na tela (pageX/pageY)
-  const limites = useRef({ joystick: null, slider: null });
+  const limites = useRef({ joystick: null, slider: null, parar: null });
 
   // Toque (identifier) que está controlando cada controle
   const toques = useRef({ joystick: null, slider: null, vistos: new Set() });
@@ -221,6 +227,22 @@ export default function Joystick({ navigation }) {
     return Math.hypot(dx, dy) <= b.width / 2;
   };
 
+  // Botão PARAR (com folga igual ao hitSlop). Precisa ser checado aqui porque,
+  // com um dedo no joystick/slider, o toque no PARAR vem para este handler
+  // e não para o onPress do botão.
+  const dentroParar = (t) => {
+    const b = limites.current.parar;
+    if (!b) return false;
+
+    const folga = 8;
+    return (
+      t.pageX >= b.x - folga &&
+      t.pageX <= b.x + b.width + folga &&
+      t.pageY >= b.y - folga &&
+      t.pageY <= b.y + b.height + folga
+    );
+  };
+
   const dentroSlider = (t) => {
     const b = limites.current.slider;
     if (!b) return false;
@@ -287,7 +309,9 @@ export default function Joystick({ navigation }) {
     if (!ble || !id || enviandoRef.current) return;
 
     enviandoRef.current = true;
-    enviarJoystick(ble, id, x * 100, y * 100, e * 100)
+    const sx = INVERTER_X ? -1 : 1;
+    const sy = INVERTER_Y ? -1 : 1;
+    enviarJoystick(ble, id, sx * x * 100, sy * y * 100, e * 100)
       .catch(() => {})
       .finally(() => {
         enviandoRef.current = false;
@@ -296,7 +320,18 @@ export default function Joystick({ navigation }) {
 
   // Parada de emergência: para rodas e garfo e já manda o comando, sem esperar o próximo ciclo
   const parar = () => {
-    soltarTudo();
+    // Dedos que ainda estão na tela continuam em "vistos": não retomam
+    // o joystick/slider até serem levantados e tocados de novo
+    toques.current = {
+      joystick: null,
+      slider: null,
+      vistos: toques.current.vistos,
+    };
+    setDirecao({ x: 0, y: 0 });
+    setElevacao(0);
+
+    // O envio periódico não espera o próximo render para mandar zero
+    comandoRef.current = { direcao: { x: 0, y: 0 }, elevacao: 0 };
 
     const ble = bleRef.current;
     const id = dispositivoRef.current;
@@ -438,6 +473,16 @@ export default function Joystick({ navigation }) {
       if (!ids.includes(id)) atual.vistos.delete(id);
     });
 
+    // Toque novo no PARAR enquanto outro dedo segura um controle
+    const tocouParar = ativos.some(
+      (t) => !atual.vistos.has(t.identifier) && dentroParar(t)
+    );
+    if (tocouParar) {
+      ativos.forEach((t) => atual.vistos.add(t.identifier));
+      parar();
+      return;
+    }
+
     ativos.forEach((t) => {
       // Um toque só assume um controle se começou em cima dele
       if (!atual.vistos.has(t.identifier)) {
@@ -510,7 +555,9 @@ export default function Joystick({ navigation }) {
         </View>
 
         <Pressable
-          onPress={parar}
+          ref={pararRef}
+          onLayout={() => medir("parar", pararRef)}
+          onPressIn={parar}
           hitSlop={8}
           style={({ pressed }) => [
             styles.parar,
@@ -849,36 +896,6 @@ export default function Joystick({ navigation }) {
                     </Animated.View>
                   </View>
 
-                  {/* Botão GARFO 0%: desce o garfo até a base */}
-                  <View style={styles.rodape}>
-                    <Pressable
-                      onPress={garfoParaBase}
-                      hitSlop={6}
-                      style={({ pressed }) => [
-                        styles.botaoBase,
-                        pressed && styles.botaoBasePressionado,
-                      ]}
-                    >
-                      {({ pressed }) => (
-                        <>
-                          <Ionicons
-                            name="arrow-down-circle"
-                            size={18}
-                            color={pressed ? "#3a2c00" : CORES.destaque}
-                          />
-                          <Text
-                            style={[
-                              styles.botaoBaseTexto,
-                              { fontSize: fonteRotulo },
-                              pressed && { color: "#3a2c00" },
-                            ]}
-                          >
-                            GARFO 0%
-                          </Text>
-                        </>
-                      )}
-                    </Pressable>
-                  </View>
                 </View>
               </>
             )}
