@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, View, ScrollView, RefreshControl } from "react-native";
 import {
   Text,
@@ -53,6 +53,45 @@ export default function Dashboard({ route }) {
     // Só atualiza em tempo real enquanto o Dashboard estiver aberto
     pollingInterval: isFocused ? 3000 : 0,
   });
+
+  // Empilhadeira é considerada conectada se enviou telemetria nos últimos N segundos
+  const TEMPO_LIMITE_CONEXAO = 15000;
+  const [agora, setAgora] = useState(Date.now());
+  const [ultimaChegada, setUltimaChegada] = useState(null);
+  const primeiraTelemetriaRef = useRef(true);
+
+  // Troca de empilhadeira: recomeça a contagem
+  useEffect(() => {
+    primeiraTelemetriaRef.current = true;
+    setUltimaChegada(null);
+  }, [empilhadeiraId]);
+
+  useEffect(() => {
+    if (!telemetria) return;
+    if (primeiraTelemetriaRef.current) {
+      // Primeira leitura pode ser antiga: usa o horário registrado na telemetria
+      primeiraTelemetriaRef.current = false;
+      const t = telemetria.data_hora
+        ? new Date(telemetria.data_hora).getTime()
+        : NaN;
+      setUltimaChegada(Number.isNaN(t) ? null : t);
+    } else {
+      // Chegou telemetria nova durante o polling: empilhadeira está enviando dados
+      setUltimaChegada(Date.now());
+    }
+  }, [telemetria?.id, telemetria?.data_hora]);
+
+  // Atualiza o relógio para o status mudar mesmo sem novas telemetrias
+  useEffect(() => {
+    if (!isFocused) return;
+    const timer = setInterval(() => setAgora(Date.now()), 2000);
+    return () => clearInterval(timer);
+  }, [isFocused]);
+
+  const empilhadeiraConectada =
+    !erroTelemetria &&
+    ultimaChegada != null &&
+    agora - ultimaChegada <= TEMPO_LIMITE_CONEXAO;
 
   const loading = loadingEmpilhadeira;
   const refreshing = refreshingEmpilhadeira || refreshingTelemetria;
@@ -196,50 +235,6 @@ export default function Dashboard({ route }) {
                     : empilhadeira.status}
                 </Chip>
               </View>
-            </Card.Content>
-          </Card>
-        </View>
-
-        <View style={isTablet ? styles.rowItem : null}>
-          {/* Bateria */}
-          <Card
-            style={[styles.card, { backgroundColor: theme.colors.surface }]}
-            mode="elevated"
-          >
-            <Card.Content>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardTitle}>
-                  {bateriaBaixa ? (
-                    <Icon
-                      source="battery-low"
-                      size={24}
-                      color={theme.colors.primary}
-                    />
-                  ) : (
-                    <Icon source="battery" size={24} color={theme.colors.primary} />
-                  )}
-
-                  <Text variant="titleMedium">Bateria</Text>
-                </View>
-
-                <Text
-                  variant="titleLarge"
-                  style={{
-                    color: bateriaBaixa ? theme.colors.error : theme.colors.primary,
-                  }}
-                >
-                  {exibir(`${empilhadeira.bateria}%`)}
-                </Text>
-              </View>
-
-              <ProgressBar
-                progress={Math.min(
-                  Math.max((empilhadeira.bateria || 0) / 100, 0),
-                  1,
-                )}
-                color={bateriaColor}
-                style={styles.progress}
-              />
             </Card.Content>
           </Card>
         </View>
@@ -436,50 +431,36 @@ export default function Dashboard({ route }) {
 
               <View style={styles.systemRow}>
                 <View style={styles.systemLeft}>
-                  <Icon source="wifi" size={24} color={theme.colors.primary} />
+                  <Icon
+                    source={empilhadeiraConectada ? "wifi" : "wifi-off"}
+                    size={24}
+                    color={
+                      empilhadeiraConectada
+                        ? theme.colors.primary
+                        : theme.colors.error
+                    }
+                  />
 
                   <Text variant="bodyLarge">Conexão</Text>
                 </View>
 
                 <Chip
-                  icon={erroTelemetria ? "alert-circle" : "check"}
+                  icon={empilhadeiraConectada ? "check" : "close-circle"}
                   style={{
-                    backgroundColor: erroTelemetria
-                      ? theme.colors.errorContainer
-                      : theme.colors.secondaryContainer,
+                    backgroundColor: empilhadeiraConectada
+                      ? theme.colors.secondaryContainer
+                      : theme.colors.errorContainer,
                   }}
                   textStyle={{
-                    color: erroTelemetria
-                      ? theme.colors.error
-                      : theme.colors.primary,
+                    color: empilhadeiraConectada
+                      ? theme.colors.primary
+                      : theme.colors.error,
                   }}
                 >
-                  {erroTelemetria ? "Offline" : "Online"}
+                  {empilhadeiraConectada ? "Conectada" : "Desconectada"}
                 </Chip>
               </View>
 
-              <Divider style={styles.divider} />
-
-              <View style={styles.systemRow}>
-                <View style={styles.systemLeft}>
-                  <Icon
-                    source="navigation"
-                    size={24}
-                    color={theme.colors.primary}
-                  />
-
-                  <Text variant="bodyLarge">Navegação</Text>
-                </View>
-
-                <Chip
-                  icon="check"
-                  style={{
-                    backgroundColor: theme.colors.secondaryContainer,
-                  }}
-                >
-                  Ativa
-                </Chip>
-              </View>
             </Card.Content>
           </Card>
         </View>
