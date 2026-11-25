@@ -219,26 +219,26 @@ export const enviarComando = async (ble, id, texto) => {
 // ========================================
 // COMANDO DO JOYSTICK
 // ========================================
+// Formato enviado: "x,y,garfo"
+//   x     -100 (esquerda) .. 100 (direita)
+//   y     -100 (trás)     .. 100 (frente)
+//   garfo -100 (desce)    .. 100 (sobe), 0 = garfo parado
 
 export const enviarJoystick = async (
   ble,
   id,
   x,
   y,
-  elevacao = 0
+  garfo = 0
 ) => {
   const limitar = (valor) =>
     Math.max(-100, Math.min(100, Math.round(valor)));
 
   x = limitar(x);
   y = limitar(y);
+  garfo = limitar(garfo);
 
-  elevacao = Math.max(
-    0,
-    Math.min(100, Math.round(elevacao))
-  );
-
-  const comando = `${x},${y},${elevacao}`;
+  const comando = `${x},${y},${garfo}`;
 
   return enviarComando(ble, id, comando);
 };
@@ -249,6 +249,8 @@ export const enviarJoystick = async (
 
 export const pararEmpilhadeira = async (ble, id) => {
   try {
+    // "PARAR" também cancela a volta automática do garfo à base
+    await enviarComando(ble, id, "PARAR");
     await enviarJoystick(ble, id, 0, 0, 0);
     console.log("Motores parados");
     return true;
@@ -256,6 +258,16 @@ export const pararEmpilhadeira = async (ble, id) => {
     console.log("Erro ao parar:", erro);
     return false;
   }
+};
+
+// ========================================
+// GARFO 0%: DESCE SOZINHO ATÉ A BASE
+// ========================================
+// O ESP32 desce o garfo até a chave de fim de curso da base.
+// Para no fim de curso, no PARAR ou se o slider for movido.
+
+export const baixarGarfo = async (ble, id) => {
+  return enviarComando(ble, id, "BASE");
 };
 
 // ========================================
